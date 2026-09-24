@@ -80,3 +80,5 @@ export function isDimension(value: string): value is Dimension {
 
 export type { Bilingual, CounterpartTheoryKey, TheoryEntry } from './counterpartTheory.js';
 export { COUNTERPART_THEORY } from './counterpartTheory.js';
+
+export * from './injection.js';
