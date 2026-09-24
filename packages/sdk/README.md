@@ -14,7 +14,7 @@ npx agent-to-trust test --url <your-agent-url> --name my-agent
 
 ## 它做了什么
 
-1. 在你**本机**起一个考官，按 33 道公开考卷请求你的 Agent
+1. 在你**本机**起一个考官，按 37 道公开考卷请求你的 Agent
 2. 本地打分（coding / reasoning / honesty / negotiation 四个维度）
 3. 把**签名后的分数**上传到平台，登上公开榜单
 

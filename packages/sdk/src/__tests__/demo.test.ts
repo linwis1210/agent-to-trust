@@ -57,9 +57,9 @@ describe('DemoAgent（内置演示考生）', () => {
     }
   });
 
-  it('全量 33 题可跑完（结构完整：30 单轮 + 3 谈判）', async () => {
+  it('全量 37 题可跑完（结构完整：30 单轮 + 4 探针 + 3 谈判）', async () => {
     const suite = await runSuite(new DemoAgent());
-    expect(suite.results.length).toBe(33);
+    expect(suite.results.length).toBe(37);
     const dims = new Map(suite.summary.map((s) => [s.dimension, s.value]));
     // 不求满分：capability<1 / integrity<1 / negotiation=1
     expect(dims.get('capability')).toBeLessThan(1);

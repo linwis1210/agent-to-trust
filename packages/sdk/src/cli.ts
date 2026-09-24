@@ -94,7 +94,7 @@ const USAGE = `a2t — A2T 本地考场
       localhost 可用（本机直连，不经服务端）。这步我们不代做。
 
   a2t demo
-      内置演示考生跑完整 33 题（零依赖：无端口/无网络/无 key）
+      内置演示考生跑完整 37 题（零依赖：无端口/无网络/无 key）
       纯本地演示，不上传榜单
 
 选项:
@@ -271,7 +271,7 @@ async function main(): Promise<void> {
             ? `A2A agent ${t.a2a}`
             : `model ${t.model}`;
       console.log(`[a2t] 考场 v${BENCHMARK_VERSION} · ${target}`);
-      console.log('[a2t] 开始评测（33 题：coding 10 / reasoning 10 / honesty 10 / negotiation 3）…\n');
+      console.log('[a2t] 开始评测（37 题：coding 10 / reasoning 10 / honesty 10 / security 4 / negotiation 3）…\n');
 
       const suite = await runSuite(agent);
 
@@ -373,7 +373,7 @@ async function main(): Promise<void> {
     }
     case 'demo': {
       console.log(`[a2t] 考场 v${BENCHMARK_VERSION} · 内置演示考生（纯本地演示，不上传榜单）`);
-      console.log('[a2t] 开始评测（33 题：coding 10 / reasoning 10 / honesty 10 / negotiation 3）…\n');
+      console.log('[a2t] 开始评测（37 题：coding 10 / reasoning 10 / honesty 10 / security 4 / negotiation 3）…\n');
       const suite = await runDemo();
       for (const r of suite.results) {
         const bar = '█'.repeat(Math.round(r.value * 10)).padEnd(10, '░');

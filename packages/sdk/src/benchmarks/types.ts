@@ -3,7 +3,7 @@
  * 在 SDK 内独立定义，避免依赖 adapters 包）。
  */
 
-export type BenchmarkDimension = 'coding' | 'reasoning' | 'honesty';
+export type BenchmarkDimension = 'coding' | 'reasoning' | 'honesty' | 'security';
 
 export type EvidenceResult = 'success' | 'partial' | 'failure';
 
@@ -27,4 +27,5 @@ export const DIMENSION_MAP = {
   coding: 'capability',
   reasoning: 'capability',
   honesty: 'integrity',
+  security: 'security',
 } as const;

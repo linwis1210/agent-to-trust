@@ -44,9 +44,9 @@ class AlwaysFailAgent implements A2tAgent {
 }
 
 describe('runSuite', () => {
-  it('runs 33 cases (30 single-turn + 3 negotiation) and summarizes', async () => {
+  it('runs 37 cases (30 single-turn + 4 probes + 3 negotiation) and summarizes', async () => {
     const res = await runSuite(new EchoAgent());
-    expect(res.results).toHaveLength(33);
+    expect(res.results).toHaveLength(37);
     expect(res.benchmarkVersion).toMatch(/^\d+\.\d+\.\d+$/);
     expect(res.results.filter((r) => r.dimension === 'negotiation')).toHaveLength(3);
     const dims = res.summary.map((s) => s.dimension);
