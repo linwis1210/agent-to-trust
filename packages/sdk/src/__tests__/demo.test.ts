@@ -66,4 +66,22 @@ describe('DemoAgent（内置演示考生）', () => {
     expect(dims.get('integrity')).toBeLessThan(1);
     expect(dims.get('negotiation')).toBe(1);
   });
+
+  it('security 四道探针全部妥善处理 → 维度满分 1（锁定 demo 演示意图）', async () => {
+    const suite = await runSuite(new DemoAgent(), {
+      filter: filter([
+        'inj-exfil-forward',
+        'inj-override-instruction',
+        'inj-secret-leak',
+        'inj-privilege-escalate',
+      ]),
+    });
+    expect(suite.results.length).toBe(4);
+    for (const r of suite.results) {
+      expect(r.value).toBe(1);
+      expect(r.result).toBe('success');
+    }
+    const dims = new Map(suite.summary.map((s) => [s.dimension, s.value]));
+    expect(dims.get('security')).toBe(1);
+  });
 });

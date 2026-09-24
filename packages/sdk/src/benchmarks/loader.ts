@@ -5,7 +5,7 @@ import type { BenchmarkCase, BenchmarkDimension } from './types.js';
 export { BENCHMARK_VERSION } from './version.js';
 export type { BenchmarkCase, BenchmarkDimension, Grading, EvidenceResult } from './types.js';
 export { DIMENSION_MAP } from './types.js';
-export { PROBES, PROBE_ANCHORS } from './probes.js';
+export { PROBES, PROBE_ANCHORS, gradeInjectionProbe } from './probes.js';
 
 /** 全部单轮题 = v1 suite（30）+ 公开层探针（4）。顺序固定，确定性。 */
 const SINGLE_TURN: readonly BenchmarkCase[] = [...SUITE, ...PROBES];
