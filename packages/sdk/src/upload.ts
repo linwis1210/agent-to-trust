@@ -36,6 +36,17 @@ export function buildIngestPayload(
   // 平台服务端回访不了它（reverify 本就跳过），若如实上报会被 SSRF 卡口 400 拒绝，
   // 导致「localhost 也能上榜」的核心承诺失效。因此只上报公网地址；私网/环回一律省略。
   const publicEndpoint = meta.endpoint && isPublicHttpUrl(meta.endpoint) ? meta.endpoint : undefined;
+  // 红线（2026-09-23）：原始输出绝不出用户机器。
+  // 服务端 ingest 本就不落 rawOutput，但此前整包 suite.results 随签名 payload 出网——
+  // 传输层已泄漏。此处投影为服务端实际消费的白名单字段（ingest.ts 落库字段集）。
+  // 本地 CaseResult 仍保留 rawOutput（本地结果页 / a2t demo 追溯用）。
+  const results = suite.results.map((r) => ({
+    caseId: r.caseId,
+    dimension: r.dimension,
+    scoreDimension: r.scoreDimension,
+    value: r.value,
+    result: r.result,
+  }));
   const body = {
     agentName: meta.name ?? 'unnamed-agent',
     agentEndpoint: publicEndpoint,
@@ -46,7 +57,7 @@ export function buildIngestPayload(
     seed: suite.seed,
     startedAt: suite.startedAt,
     finishedAt: suite.finishedAt,
-    results: suite.results,
+    results,
     pubkey: keypair.publicKeyPem,
     nonce: randomUUID(),
     timestamp: Date.now(),

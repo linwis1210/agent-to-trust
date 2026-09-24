@@ -55,6 +55,35 @@ describe('buildIngestPayload', () => {
     );
     expect(p.agentEndpoint).toBe('https://agent.example.com/v1/chat');
   });
+
+  it('上报 payload 的 results 只含白名单字段，绝不外带 rawOutput', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-up-'));
+    const keypair = ensureKeypair(dir);
+    const suite = await fixtureSuite();
+    const payload = buildIngestPayload(suite, { name: 'whitelist-agent' }, keypair);
+    const results = payload.results as Array<Record<string, unknown>>;
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(Object.keys(r).sort()).toEqual(
+        ['caseId', 'dimension', 'result', 'scoreDimension', 'value'].sort(),
+      );
+    }
+  });
+
+  it('红线：被测 agent 的原始输出不出用户机器（哨兵字符串不出现）', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-up-'));
+    const keypair = ensureKeypair(dir);
+    const SENTINEL = 'ZZ-SENTINEL-DO-NOT-LEAK-93817';
+    // 被测 agent 的原始回复里塞哨兵；上报 payload 序列化后必须找不到它
+    const suite = await runSuite(
+      { reply: async () => `my private reasoning ${SENTINEL}` },
+      { filter: (id) => id === 'coding-sum' },
+    );
+    const payload = buildIngestPayload(suite, { name: 'sentinel-agent' }, keypair);
+    expect(JSON.stringify(payload)).not.toContain(SENTINEL);
+    // 本地 CaseResult 仍保留原文（本地结果页/Demo 追溯需要）
+    expect(suite.results[0].rawOutput).toContain(SENTINEL);
+  });
 });
 
 describe('uploadResults', () => {
