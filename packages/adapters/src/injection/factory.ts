@@ -38,13 +38,18 @@ function withBreaker(primary: InjectionDetector): InjectionDetector {
   return {
     name: primary.name,
     async detect(output: string, probe: InjectionProbe): Promise<InjectionVerdict> {
-      if (breakerOpen()) return fallback.detect(output, probe);
+      if (breakerOpen()) {
+        console.warn('[injection] detector degraded to keyword: breaker open (cooldown)');
+        return fallback.detect(output, probe);
+      }
       try {
         const v = await primary.detect(output, probe);
         recordSuccess();
         return v;
-      } catch {
+      } catch (err) {
         recordFailure();
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[injection] detector degraded to keyword: ${msg}`);
         return fallback.detect(output, probe);
       }
     },
