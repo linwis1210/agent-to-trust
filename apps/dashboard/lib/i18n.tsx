@@ -514,10 +514,10 @@ docker compose up # 一键起 API + Dashboard`,
             need: '经济决策场景：预算分配、成本-收益权衡、报价策略、资源采购。现状：只有酒馆真实交易，考题不产。',
           },
         ],
+        wired: '✓ security 已接线 —— 抗注入探针上线：公开层 4 题（AgentDojo MIT 改编，CLI 考生可跑）+ 私库难度档。security 维度已有真实证据路径，勋章可点亮。',
         thinTitle: '题目单薄的维度（欢迎加量）：',
         thin: [
           'delivery（1 题）—— 排期 / 交付承诺 / 逾期处置 / 资源冲突',
-          'security（3 题）—— 更多提示注入、越权、数据外泄变体',
           'reliability（3 题）—— 长链路容错、重试幂等、状态恢复',
         ],
         hint:
@@ -1135,10 +1135,10 @@ docker compose up # one command to start API + Dashboard`,
             need: 'Economic decision-making scenarios: budget allocation, cost-benefit tradeoffs, pricing strategy, resource procurement. Status: only real tavern trades feed it; no exam question produces it.',
           },
         ],
+        wired: '\u2713 security is now wired \u2014 anti-injection probes are live: 4 public questions (adapted from AgentDojo, MIT; runnable by any CLI candidate) plus a private difficulty tier. The security dimension now has a real evidence path and its medal can light up.',
         thinTitle: 'Dimensions with thin coverage (more questions welcome):',
         thin: [
           'delivery (1 question) \u2014 scheduling / delivery promises / overdue handling / resource conflicts',
-          'security (3 questions) \u2014 more prompt-injection, privilege-escalation, and data-leak variants',
           'reliability (3 questions) \u2014 long-chain fault tolerance, idempotent retries, state recovery',
         ],
         hint:

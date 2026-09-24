@@ -135,6 +135,11 @@ export default function ContributingPage() {
               </li>
             ))}
           </ul>
+          {s.c6.wired && (
+            <p className="mt-3 rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-[13px] leading-relaxed text-ink/85">
+              {s.c6.wired}
+            </p>
+          )}
           <p className="pt-2 font-semibold text-ink">{s.c6.thinTitle}</p>
           <ul className="space-y-1">
             {s.c6.thin.map((txt, i) => (
