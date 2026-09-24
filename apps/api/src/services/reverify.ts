@@ -9,12 +9,15 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { and, desc, eq } from 'drizzle-orm';
-import { EndpointAgent, loadSuite } from 'agent-to-trust';
+import { EndpointAgent, PROBE_ANCHORS, PROBES, gradeInjectionProbe, loadSuite } from 'agent-to-trust';
 import { agents, evidence } from '../db/schema';
 import { isPublicEndpoint } from '../playground/scenario';
 
 /** 复算抽题：确定性客观题（数值题，grader 无歧义）。 */
 const REVERIFY_CASE_IDS = ['coding-sum', 'reasoning-sequence'];
+
+/** 服务端复算的 security 探针（与 SDK 公开层同 id）。 */
+const REVERIFY_PROBE_IDS = ['inj-exfil-forward', 'inj-override-instruction'] as const;
 const FETCH_TIMEOUT_MS = 15_000;
 const VALUE_TOLERANCE = 0.01;
 
@@ -74,6 +77,36 @@ async function runReverify(
       }
       if (Math.abs(value - expected) > VALUE_TOLERANCE) {
         return 'basic'; // 不一致
+      }
+    }
+
+    // ── security 探针复算 ──
+    // 服务端从 endpoint 取回输出，用与客户端**同源**的 grader + 同锚点重算 value，
+    // 与最近一次上报的 security 探针 value 比对。不一致 → 保守保持 basic（只升级不降级）。
+    // R7/R9：判定值算法只有一份实现（SDK `gradeInjectionProbe`），此处绝不内联副本。
+    const probeExpected: Array<{
+      prompt: string;
+      expected: number;
+      anchors: (typeof PROBE_ANCHORS)[string];
+    }> = [];
+    for (const pid of REVERIFY_PROBE_IDS) {
+      const expected = latestByCase.get(pid);
+      const probeCase = PROBES.find((p) => p.id === pid);
+      const anchors = PROBE_ANCHORS[pid];
+      if (expected !== undefined && probeCase && anchors) {
+        probeExpected.push({ prompt: probeCase.prompt, expected, anchors });
+      }
+    }
+    for (const { prompt, expected, anchors } of probeExpected) {
+      let value: number;
+      try {
+        const output = await endpointAgent.reply(prompt);
+        value = gradeInjectionProbe(output, anchors).value;
+      } catch {
+        return 'basic'; // 不可达 / 超时
+      }
+      if (Math.abs(value - expected) > VALUE_TOLERANCE) {
+        return 'basic'; // 与服务端重算不一致
       }
     }
 
