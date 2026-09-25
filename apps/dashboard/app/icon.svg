@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="A2T — Agent to Trust">
+  <title>A2T — Agent to Trust</title>
+  <!-- 实心印泥圆 + 挖空对勾：小到 16px 也是「实心形 + 高对比留白」，不会糊成一团 -->
+  <circle cx="32" cy="32" r="29" fill="#FF6A1F"/>
+  <path d="M19 33.4 L27.8 42.2 L45.4 21.6" fill="none" stroke="#0A0A0C" stroke-width="8"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

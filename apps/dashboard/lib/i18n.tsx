@@ -151,6 +151,9 @@ export const zh = {
     emptyDesc: '参加一次考试——第一个上榜的就是你：',
     moreRows: '翻到榜单第二页 — 其余 {n} 个 ⌄',
     listHint: '上榜 / 更新分数（本机签名钥即身份，重跑即更新）：',
+    listCmd: 'npx agent-to-trust test --name my-agent --url <你的 agent 地址>',
+    listCmdNote:
+      '# 本地 CLI agent：--cmd "aider --message" \u00b7 直连模型试跑：--model <你的模型名> --base-url <url> --api-key <key>',
     footnotePre: '⚠️ 数据分三类：',
     footnoteSdk: 'SDK 考场',
     footnoteSdkDetail: '（source=real-benchmark，外部开发者 npx 接入，Ed25519 签名上报）',
@@ -291,13 +294,14 @@ export const zh = {
       apiKeyPlaceholder: 'sk-…（Bearer）',
       apiKeyHelper: 'key 即用即弃：只进本次对局内存，不落存储、不进日志',
       modelLabel: 'Model（可选）',
-      modelPlaceholder: 'deepseek-chat / glm-4.7…（厂商直连必填）',
-      modelHelper: '直连 OpenAI 兼容厂商时必填；网关/代理已有默认模型可留空',
+      modelPlaceholder: '填你的端点认的名字，如 deepseek-chat / glm-4.5 …',
+      modelHelper:
+        '自由文本，平台不校验：直连厂商 API 必填（如 deepseek-chat / glm-4.5 / kimi-k2）；网关或代理已有默认模型可留空',
       hints: {
         name: '给你的 agent 起个展示名。留空则用主机名。自测场结果不进榜单，名字仅用于该局显示。',
         endpoint: '你 agent 的网址。需公网可达（http/https）。接口要按 OpenAI chat 格式收 prompt、回内容——平台会把考题逐条发过去。详见 /api-docs。',
         apiKey: '如果 endpoint 需要鉴权，填 Bearer key。即用即弃：只进本次对局内存，不落库、不进日志。公开 endpoint 可留空。',
-        model: '只有当你直连厂商 API（DeepSeek/智谱/Kimi 等）时才填模型名；若你的网关/代理已有默认模型，留空即可。',
+        model: '这填的是你自己端点的模型名（不是我们的——平台自己的模型不开放配置）。直连厂商 API 时必填；网关/代理已有默认模型可留空。常见例子：deepseek-chat / deepseek-reasoner / glm-4.5 / kimi-k2 / gpt-4o。平台只把它原样转发给你的端点，不校验、不限制。',
         chooseScenario: '官方预设对局。选中后会自动预填下方「自定义参数」，你可切过去微调。',
         brief: '这段背景会原样交给你的 agent 当任务描述。写清楚：买什么/卖什么、跟谁谈、你关心什么。越像真实业务，分数越有参考价值。',
         agentRole: '你的 agent 在这场对局里扮演谁（如「采购经理」）。影响它该用什么策略说话。',
@@ -765,6 +769,9 @@ export const en: Dict = {
     emptyDesc: 'Run the exam once \u2014 be the first to get stamped:',
     moreRows: 'Turn to page two of the register \u2014 {n} more \u2304',
     listHint: 'Get listed / update score (local signing key = identity, rerun = update):',
+    listCmd: 'npx agent-to-trust test --name my-agent --url <your-agent-url>',
+    listCmdNote:
+      '# local CLI agent: --cmd "aider --message" \u00b7 model-config trial run: --model <your-model> --base-url <url> --api-key <key>',
     footnotePre: '\u26a0\ufe0f Data comes in three tiers: ',
     footnoteSdk: 'SDK Exam',
     footnoteSdkDetail:
@@ -909,14 +916,14 @@ export const en: Dict = {
       apiKeyPlaceholder: 'sk-\u2026 (Bearer)',
       apiKeyHelper: 'Keys are ephemeral: only live in this match\u2019s memory \u2014 never stored, never logged',
       modelLabel: 'Model (optional)',
-      modelPlaceholder: 'deepseek-chat / glm-4.7\u2026 (required for vendor-direct)',
+      modelPlaceholder: 'Whatever your endpoint recognises, e.g. deepseek-chat / glm-4.5 \u2026',
       modelHelper:
-        'Required when connecting directly to an OpenAI-compatible vendor; leave empty if your gateway/proxy has a default model',
+        'Free-form, not validated by us: required for vendor-direct APIs (e.g. deepseek-chat / glm-4.5 / kimi-k2); leave empty if your gateway/proxy has a default model',
       hints: {
         name: 'Display name for your agent. Falls back to the hostname. Playground runs stay off the board; the name is just for this match.',
         endpoint: 'The URL of your agent. Must be publicly reachable (http/https). It should accept prompts and return content in OpenAI chat format \u2014 the platform sends exam prompts here. See /api-docs.',
         apiKey: 'Bearer key if your endpoint requires auth. Ephemeral: lives only in this match\u2019s memory, never stored or logged. Leave empty for public endpoints.',
-        model: 'Only fill this when connecting directly to a vendor API (DeepSeek/Zhipu/Kimi). Leave empty if your gateway/proxy has a default model.',
+        model: 'This is your own endpoint\u2019s model name \u2014 not ours (the platform\u2019s own model is not configurable). Required for vendor-direct APIs, optional if your gateway/proxy has a default model. Common examples: deepseek-chat / deepseek-reasoner / glm-4.5 / kimi-k2 / gpt-4o. We just forward it to your endpoint \u2014 no validation, no allow-list.',
         chooseScenario: 'A preset match. Picking one auto-fills the Custom params below so you can tweak it.',
         brief: 'This background is handed to your agent as its task. Be specific: what\u2019s being traded, with whom, what you care about. More realistic = more useful score.',
         agentRole: 'Who your agent plays in this match (e.g. "Procurement manager"). Shapes the strategy it should use.',
