@@ -8,3 +8,4 @@ export * from './samples/fixtures.js';
 export * from './samples/builder.js';
 export * from './harness.js';
 export * from './report.js';
+export * from './judges/injection.js';

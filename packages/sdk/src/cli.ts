@@ -6,6 +6,7 @@
  *   a2t test --url <endpoint> [--name <agent名>]
  *   a2t test --model <model> --base-url <url> --api-key <key> [--persona <提示>] [--name <agent名>]
  *   a2t join   (Phase 2: 进入 Arena 模拟考场)
+ *   a2t claim  (事后认领/自证身份：私钥验签)
  *   a2t init   (L1 埋点初始化，后续版本)
  */
 import { parseArgs } from 'node:util';
@@ -15,10 +16,11 @@ import { EndpointAgent } from './agent/endpoint.js';
 import { ModelAgent } from './agent/model.js';
 import { CmdAgent } from './agent/cmd.js';
 import { A2aAgent } from './agent/a2a.js';
-import { loadConfig } from './config.js';
+import { loadConfig, saveConfig, type A2tConfig } from './config.js';
 import { BENCHMARK_VERSION } from './benchmarks/loader.js';
 import { runSuite } from './runner.js';
 import { uploadResults } from './upload.js';
+import { claim } from './claim.js';
 import { runJoinLoop } from './arena.js';
 import { runDemo } from './demo.js';
 
@@ -40,6 +42,8 @@ export interface TestOptions {
   cmdStdin?: boolean;
   /** 密钥目录（多身份/测试用，默认 ~/.a2t）。 */
   dir?: string;
+  /** 署名（自称 handle，服务端归一化；不设则回退 config.contributor，再无则匿名）。 */
+  by?: string;
 }
 
 export interface JoinCliOptions {
@@ -65,12 +69,31 @@ export interface JoinCliOptions {
   maxRounds?: number;
   /** 密钥目录（多身份/测试用，默认 ~/.a2t）。 */
   dir?: string;
+  /** 署名（预留：Arena 通道服务端暂不收 submitter，解析不报错但暂不发送）。 */
+  by?: string;
+}
+
+export interface ConfigCliOptions {
+  /** 带 --by → 写入 contributor；无参 → 打印当前配置。 */
+  by?: string;
+}
+
+export interface ClaimCliOptions {
+  /** 榜上的 agent 名或 agentId（必填）。 */
+  ref?: string;
+  /** 署名（可选；解析链与 test/join 一致：flag > config.contributor > 无，绝不自动推断）。 */
+  by?: string;
+  apiBase?: string;
+  /** 密钥目录（多身份/测试用，默认 ~/.a2t）。 */
+  dir?: string;
 }
 
 export interface ParsedCommand {
-  command: 'test' | 'join' | 'init' | 'demo' | 'help';
+  command: 'test' | 'join' | 'init' | 'demo' | 'config' | 'claim' | 'help';
   test?: TestOptions;
   join?: JoinCliOptions;
+  config?: ConfigCliOptions;
+  claim?: ClaimCliOptions;
 }
 
 const USAGE = `a2t — A2T 本地考场
@@ -94,11 +117,17 @@ const USAGE = `a2t — A2T 本地考场
       localhost 可用（本机直连，不经服务端）。这步我们不代做。
 
   a2t demo
-      内置演示考生跑完整 33 题（零依赖：无端口/无网络/无 key）
+      内置演示考生跑完整 37 题（零依赖：无端口/无网络/无 key）
       纯本地演示，不上传榜单
+
+  a2t claim --ref <name|agentId> [--by <署名>]
+      认领/自证身份：验证你持有上榜 agent 的私钥（事后补署名/自证）
+      用与上传相同的本地密钥（~/.a2t/）签名挑战；--by 不设则纯自证（不动已有署名）
 
 选项:
   --name <agent名>    榜单展示名（默认取 config.agentName 或目录名）
+  --by <署名>        你的署名 handle（如 @jeremy；服务端归一化，非法会被拒）
+                    默认取 config.contributor；都不设则匿名上榜。绝不从 hostname/git 推断
   --api-base <url>    平台 API 地址（默认 env A2T_API_URL）
   --mode <live|scripted>  对家模式（join 专用，默认 live：真实 LLM 人格；scripted：确定性基线）
 
@@ -111,6 +140,11 @@ const USAGE = `a2t — A2T 本地考场
       · 单人排队约 12 秒后由平台脚本买家接单开局（先手出价）
     [--max-rounds <n>]  最大回合数（默认 20）
     [--mode live|scripted]  对家模式（默认 live）
+  a2t config [--by <署名>]
+      无参数：打印当前配置（~/.a2t/config.json）
+      --by <署名>：保存默认署名（本地只 trim，归一化由服务端做），后续 test 上报自动带上
+  a2t claim --ref <name|agentId> [--by <署名>]
+      认领榜上 agent：私钥验签自证；--by 补署名（已被占用/不可变更由服务端拒绝）
   a2t init    埋点初始化（后续版本）
   a2t help    显示本帮助
 `;
@@ -141,12 +175,14 @@ export function parseCli(argv: string[]): ParsedCommand {
         cmd: { type: 'string' },
         'cmd-stdin': { type: 'boolean' },
         dir: { type: 'string' },
+        by: { type: 'string' },
       },
     });
     return {
       command: 'test',
       test: {
         name: values.name,
+        by: values.by,
         url: values.url,
         model: values.model,
         a2a: values.a2a,
@@ -180,6 +216,7 @@ export function parseCli(argv: string[]): ParsedCommand {
         cmd: { type: 'string' },
         'cmd-stdin': { type: 'boolean' },
         dir: { type: 'string' },
+        by: { type: 'string' },
       },
     });
     // CLI 默认 live（显式实现，不依赖 API 默认 scripted）；非法值报错退出。
@@ -205,12 +242,64 @@ export function parseCli(argv: string[]): ParsedCommand {
         cmd: values.cmd,
         cmdStdin: values['cmd-stdin'],
         dir: values.dir,
+        by: values.by,
+      },
+    };
+  }
+  if (command === 'config') {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        by: { type: 'string' },
+      },
+    });
+    return { command: 'config', config: { by: values.by } };
+  }
+  if (command === 'claim') {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        ref: { type: 'string' },
+        by: { type: 'string' },
+        'api-base': { type: 'string' },
+        dir: { type: 'string' },
+      },
+    });
+    if (!values.ref) {
+      throw new Error('claim 需要 --ref <name|agentId>（要认领的榜上 agent）');
+    }
+    return {
+      command: 'claim',
+      claim: {
+        ref: values.ref,
+        by: values.by,
+        apiBase: values['api-base'] ?? process.env.A2T_API_URL,
+        dir: values.dir,
       },
     };
   }
   if (command === 'demo') return { command: 'demo' };
   if (command === 'init') return { command: 'init' };
-  throw new Error(`未知命令: ${command}（可用: test | join | demo | init | help）`);
+  throw new Error(`未知命令: ${command}（可用: test | join | demo | config | claim | init | help）`);
+}
+
+/** config --by 写入：本地只 trim（归一化由服务端做），保留其它字段。 */
+export function mergeContributor(config: A2tConfig, by: string): A2tConfig {
+  return { ...config, contributor: by.trim() };
+}
+
+/**
+ * claim 署名解析链：--by flag > config.contributor > 无（匿名）。绝不自动推断（D7 隐私红线）。
+ * flag 值 trim 后为空串 → 视为未设置（脚本变量未设置时 `--by "$BY"` 的常见形态）：
+ * 照发空串会与服务端归一化（'' → null）错位，签名体不一致 → 必然 401「签名验证失败」，误导排查。
+ * config.contributor 空串同口径（config --by "" 存的就是空署名 = 匿名）。
+ */
+export function resolveSubmitter(
+  by: string | undefined,
+  configContributor: string | undefined,
+): string | undefined {
+  const flag = by !== undefined && by.trim() === '' ? undefined : by;
+  return flag ?? (configContributor || undefined);
 }
 
 /** 校验 test 参数。返回错误信息，或 null 表示通过。 */
@@ -271,7 +360,7 @@ async function main(): Promise<void> {
             ? `A2A agent ${t.a2a}`
             : `model ${t.model}`;
       console.log(`[a2t] 考场 v${BENCHMARK_VERSION} · ${target}`);
-      console.log('[a2t] 开始评测（33 题：coding 10 / reasoning 10 / honesty 10 / negotiation 3）…\n');
+      console.log('[a2t] 开始评测（37 题：coding 10 / reasoning 10 / honesty 10 / security 4 / negotiation 3）…\n');
 
       const suite = await runSuite(agent);
 
@@ -287,6 +376,9 @@ async function main(): Promise<void> {
 
       const apiBase = t.apiBase ?? config.apiBase ?? 'https://sealit.cc/api';
       console.log(`\n[a2t] 上报 ${apiBase}/ingest/results …`);
+      // 署名解析链：--by flag > config.contributor > 无（匿名）。绝不从 hostname/git 推断（D7 隐私红线）；
+      // 归一化由服务端做，SDK 只管如实发送。
+      const submitter = t.by ?? config.contributor;
       try {
         const res = await uploadResults(suite, {
           meta: {
@@ -297,6 +389,7 @@ async function main(): Promise<void> {
             endpoint: t.url,
             model: t.model,
             version: t.agentVersion,
+            submitter,
             modelMeta: t.model
               ? { model: t.model, baseUrl: t.baseUrl ?? '', persona: t.persona }
               : undefined,
@@ -305,6 +398,11 @@ async function main(): Promise<void> {
           dir: t.dir,
         });
         console.log(`[a2t] ✓ 上榜成功 agentId=${res.agentId} score=${res.score}`);
+        console.log(
+          submitter
+            ? `[a2t] 署名: @${submitter}`
+            : '[a2t] 匿名上榜（a2t config --by <署名> 可署名）',
+        );
         console.log(
           `[a2t] README badge: [![A2T](${apiBase}/badge/${res.agentId}.svg)](https://sealit.cc)`,
         );
@@ -357,6 +455,8 @@ async function main(): Promise<void> {
           mode: j.mode ?? 'live',
           maxRounds: j.maxRounds,
           dir: j.dir,
+          // 注意：j.by（署名）已解析但不发送——Arena 通道（register/queue）服务端暂不收
+          // submitter，等 API 侧支持后再接线；此处不发不发也不回显，避免假承诺。
           log: console.log,
         });
         console.log(
@@ -371,9 +471,42 @@ async function main(): Promise<void> {
       }
       return;
     }
+    case 'claim': {
+      const c = parsed.claim!;
+      const config = loadConfig();
+      const apiBase = c.apiBase ?? config.apiBase ?? 'https://sealit.cc/api';
+      // 署名解析链与 test/join 一致：--by flag > config.contributor > 无。绝不自动推断（D7 隐私红线）。
+      // --by 空串/纯空白视为未设置（照发空串会与服务端 null 归一化错位 → 必然 401，误导排查）。
+      const submitter = resolveSubmitter(c.by, config.contributor);
+      console.log(`[a2t] 认领 ${c.ref}（${submitter ? `署名 @${submitter}` : '纯自证，不带署名'}）…`);
+      try {
+        const res = await claim({ ref: c.ref!, apiBase, submitter, dir: c.dir });
+        console.log(`[a2t] 认领成功: ${res.name}（已验证持有私钥）`);
+        console.log(res.submitterSet && submitter ? `[a2t] 署名: @${submitter}` : '[a2t] 未设置署名');
+      } catch (e) {
+        console.error(`[a2t] 认领失败：${(e as Error).message}`);
+        process.exit(1);
+      }
+      return;
+    }
+    case 'config': {
+      const c = parsed.config!;
+      if (c.by === undefined) {
+        console.log(JSON.stringify(loadConfig(), null, 2));
+        return;
+      }
+      const next = mergeContributor(loadConfig(), c.by);
+      saveConfig(next);
+      console.log(
+        next.contributor
+          ? `[a2t] 已保存署名 contributor=${next.contributor}（归一化由服务端做，a2t test 上报时自动带上）`
+          : '[a2t] 已保存空署名（上报时按匿名处理）',
+      );
+      return;
+    }
     case 'demo': {
       console.log(`[a2t] 考场 v${BENCHMARK_VERSION} · 内置演示考生（纯本地演示，不上传榜单）`);
-      console.log('[a2t] 开始评测（33 题：coding 10 / reasoning 10 / honesty 10 / negotiation 3）…\n');
+      console.log('[a2t] 开始评测（37 题：coding 10 / reasoning 10 / honesty 10 / security 4 / negotiation 3）…\n');
       const suite = await runDemo();
       for (const r of suite.results) {
         const bar = '█'.repeat(Math.round(r.value * 10)).padEnd(10, '░');

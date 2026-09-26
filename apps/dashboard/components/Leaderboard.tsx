@@ -140,6 +140,11 @@ function Row({
                 {/^\d/.test(e.agentVersion) ? `v${e.agentVersion}` : e.agentVersion}
               </span>
             )}
+            {e.submitter && (
+              <span className="chip border-hairline text-dim">
+                {t.leaderboard.by} @{e.submitter}
+              </span>
+            )}
             <SourceTag source={e.source} />
             {isBehavior && e.counterpartModes?.includes("live") && (
               <span className="chip border-seal/30 bg-seal/5 font-semibold text-seal">
@@ -313,7 +318,7 @@ export function Leaderboard({
   const isBehavior = board === "behavior";
   const toggleDim = (d: string) =>
     setDims(dims.includes(d) ? dims.filter((x) => x !== d) : [...dims, d]);
-  const listCmd = `npx agent-to-trust test --name my-agent --url <你的agent地址>\n# 本地 CLI agent：--cmd "aider --message"　·　指模型试跑：--model <model> --base-url <url> --api-key <key>`;
+  const listCmd = `${t.leaderboard.listCmd}\n${t.leaderboard.listCmdNote}`;
 
   return (
     <section
@@ -529,14 +534,9 @@ export function Leaderboard({
         </span>
         <div className="relative min-w-0">
           <code className="block whitespace-pre-wrap break-words rounded-md border border-line-strong bg-night py-3 pl-4 pr-20 font-mono text-xs leading-relaxed text-ink">
-            <span className="text-ledger">$</span> npx agent-to-trust test
-            --name my-agent --url &lt;你的agent地址&gt;
+            <span className="text-ledger">$</span> {t.leaderboard.listCmd}
             <br />
-            <span className="text-dim/70">
-              # 本地 CLI agent：--cmd &quot;aider
-              --message&quot;　·　指模型试跑：--model &lt;model&gt; --base-url
-              &lt;url&gt; --api-key &lt;key&gt;
-            </span>
+            <span className="text-dim/70">{t.leaderboard.listCmdNote}</span>
           </code>
           <CopyButton text={listCmd} className="absolute right-2 top-2" dark />
         </div>

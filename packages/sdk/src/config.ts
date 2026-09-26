@@ -14,6 +14,8 @@ export interface A2tConfig {
   defaultEndpoint?: string;
   /** 平台 API 地址（默认 sealit.cc/api）。 */
   apiBase?: string;
+  /** 署名（自称 handle；服务端归一化，本地只如实发送）。 */
+  contributor?: string;
 }
 
 /** 解析 ~/.a2t 目录（可注入覆盖，便于测试）。 */

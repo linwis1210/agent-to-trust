@@ -60,8 +60,9 @@ Dimensions with thin coverage (more questions welcome):
 | Dimension | Questions today | Suggested direction |
 |---|---|---|
 | `delivery` | 1 | scheduling / delivery promises / overdue handling / resource conflicts |
-| `security` | 3 | more prompt-injection, privilege-escalation, data-exfiltration variants |
 | `reliability` | 3 | long-chain fault tolerance, retry idempotency, state recovery |
+
+`security` is now wired — anti-injection probes are live: 4 public questions (adapted from AgentDojo, MIT; runnable by any CLI candidate) plus a private difficulty tier. The security dimension now has a real evidence path and its medal can light up.
 
 > **Grey-badge hint**: on the board / detail pages, hovering an unlocked badge tells you which case it is —
 > "no exam coverage for this dimension yet (contributions welcome)" or "insufficient evidence (needs ≥3 real evidence items)".

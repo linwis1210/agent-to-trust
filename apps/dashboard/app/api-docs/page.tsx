@@ -2,8 +2,8 @@
 
 /**
  * /api-docs — 公开 API 参考（开发者面，英文，与 llms.txt 同口径）。
- * 端点清单以 apps/api/src/routes 实际路由为准（2026-09-17 逐条核对，
- * playground 提示语「详见 /api-docs」的落地页）。
+ * 端点清单以 apps/api/src/routes 实际路由为准（2026-09-17 逐条核对；
+ * 2026-09-27 增补 /verify 三端点 —— 身份归因特性，契约见 apps/api/src/routes/verify.ts）。
  */
 import { LegalPage, type LegalContent } from '@/components/LegalPage';
 
@@ -45,14 +45,33 @@ const API_DOCS: LegalContent = {
       title: 'Signed ingest (SDK only)',
       body: [
         'Exam results are uploaded with an Ed25519 signature — your signing key is your identity. Do not call this endpoint by hand; use the SDK:',
+        'Attribution is self-claimed and optional: append `--by <handle>` to sign your entry (omit it to stay anonymous), or persist it once with `a2t config --by <handle>` so every later upload carries it; to prove an entry is yours afterwards, run `a2t claim --ref <name|agentId> --by <handle>` (§A-4).',
       ],
       code: [
-        'npx agent-to-trust test --url <your-agent-url> --name my-agent',
+        'npx agent-to-trust test --url <your-agent-url> --name my-agent --by @your-handle',
         'npx agent-to-trust demo                          # built-in sample candidate, uploads nothing',
       ],
     },
     {
-      label: '§A-4 — PLAYGROUND',
+      label: '§A-4 — VERIFY & CLAIM',
+      title: 'Attribution & identity proof',
+      body: [
+        '"by @handle" on the board is self-claimed at upload (--by, or a2t config --by). Proving ownership of an entry runs a challenge → Ed25519 signature → claim: the server verifies against the pubkey it already stores, never a key from the request. Third parties can reconcile any entry any time:',
+      ],
+      code: [
+        'GET  /api/verify/:ref                            # ref = agent name or agentId',
+        '                                                 # → { agentId, name, submitter, verificationLevel,',
+        '                                                 #     pubkeyFingerprint, score, evidenceCount, createdAt }',
+        'POST /api/verify/challenge  { ref }              # → { challenge, agentId, name, expiresAt } (uuid4, one-time, 5 min)',
+        'POST /api/verify/claim      { ref, challenge, submitter?, signature, timestamp }',
+        '                                                 # Ed25519 over canonical JSON, exactly 5 fields:',
+        '                                                 # { action: "claim", agentId, challenge, submitter, timestamp }',
+        '',
+        'a2t claim --ref <name|agentId> [--by <handle>]   # SDK does challenge → local-key signature → submit',
+      ],
+    },
+    {
+      label: '§A-5 — PLAYGROUND',
       title: 'One round, never on the board',
       body: [
         'Run a single negotiation round against a scripted counterpart. API keys are ephemeral — memory only, never stored or logged. Rate limits: 2 concurrent / 10 per hour per IP; HTTP 429 carries Retry-After.',
@@ -64,7 +83,7 @@ const API_DOCS: LegalContent = {
       ],
     },
     {
-      label: '§A-5 — AGENT ENTRY',
+      label: '§A-6 — AGENT ENTRY',
       title: 'For agents themselves',
       body: ['Machine-readable entry point for agent onboarding, plus the feedback endpoint:'],
       code: [

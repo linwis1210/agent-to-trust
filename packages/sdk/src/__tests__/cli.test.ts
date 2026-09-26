@@ -1,8 +1,10 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { parseCli, validateJoinOptions, validateTestOptions } from '../cli.js';
+import { describe, expect, it, vi } from 'vitest';
+import { claim } from '../claim.js';
+import { mergeContributor, parseCli, resolveSubmitter, validateJoinOptions, validateTestOptions } from '../cli.js';
+import { ensureKeypair, verifyPayload } from '../keys.js';
 import { loadConfig, saveConfig } from '../config.js';
 
 describe('parseCli', () => {
@@ -95,6 +97,51 @@ describe('parseCli', () => {
     expect(parseCli([]).command).toBe('help');
   });
 
+  it('parses --by 署名（test）', () => {
+    const p = parseCli(['test', '--url', 'x', '--by', 'jeremy']);
+    expect(p.test?.by).toBe('jeremy');
+  });
+
+  it('parses --by 署名（join，透传不报错）', () => {
+    const p = parseCli(['join', '--url', 'x', '--by', 'jeremy']);
+    expect(p.join?.by).toBe('jeremy');
+  });
+
+  it('parses config 子命令（无参 → 查看配置）', () => {
+    const p = parseCli(['config']);
+    expect(p.command).toBe('config');
+    expect(p.config?.by).toBeUndefined();
+  });
+
+  it('parses config --by（写署名）', () => {
+    const p = parseCli(['config', '--by', 'jeremy']);
+    expect(p.command).toBe('config');
+    expect(p.config?.by).toBe('jeremy');
+  });
+
+  it('parses claim 子命令（--ref 必带，--by/--api-base/--dir 透传）', () => {
+    const p = parseCli([
+      'claim',
+      '--ref',
+      'my-agent',
+      '--by',
+      'jeremy',
+      '--api-base',
+      'http://api.test',
+      '--dir',
+      '/tmp/a2t-x',
+    ]);
+    expect(p.command).toBe('claim');
+    expect(p.claim?.ref).toBe('my-agent');
+    expect(p.claim?.by).toBe('jeremy');
+    expect(p.claim?.apiBase).toBe('http://api.test');
+    expect(p.claim?.dir).toBe('/tmp/a2t-x');
+  });
+
+  it('claim 缺 --ref → 抛错', () => {
+    expect(() => parseCli(['claim'])).toThrow(/--ref/);
+  });
+
   it('unknown command throws', () => {
     expect(() => parseCli(['foo'])).toThrow(/未知命令/);
   });
@@ -135,6 +182,16 @@ describe('config roundtrip', () => {
     writeFileSync(join(dir, 'config.json'), '{broken');
     expect(loadConfig(dir)).toEqual({});
   });
+
+  it('config --by：写 contributor（本地只 trim，归一化归服务端）且保留其它字段', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-test-'));
+    saveConfig({ agentName: 'x', apiBase: 'http://api.test' }, dir);
+    saveConfig(mergeContributor(loadConfig(dir), '  jeremy '), dir);
+    const c = loadConfig(dir);
+    expect(c.contributor).toBe('jeremy');
+    expect(c.agentName).toBe('x');
+    expect(c.apiBase).toBe('http://api.test');
+  });
 });
 
 describe('子命令 --help（文档入口要求可用）', () => {
@@ -145,7 +202,69 @@ describe('子命令 --help（文档入口要求可用）', () => {
     ['demo', '--help'],
     ['init', '--help'],
   ])('parseCli(%o) 返回 help 而不是抛错', (cmd, flag) => {
-    expect(() => parseCli([cmd, flag] as Parameters<typeof parseCli>)).not.toThrow();
-    expect(parseCli([cmd, flag] as Parameters<typeof parseCli>).command).toBe('help');
+    expect(() => parseCli([cmd, flag])).not.toThrow();
+    expect(parseCli([cmd, flag]).command).toBe('help');
+  });
+});
+
+describe('claim --by 空串视为未设置（修复误导性 401）', () => {
+  it('resolveSubmitter：空串/纯空白 flag → 落到 config 兜底；全空 → 匿名 undefined；非空原样透传', () => {
+    expect(resolveSubmitter('  ', 'jeremy')).toBe('jeremy');
+    expect(resolveSubmitter('', 'jeremy')).toBe('jeremy');
+    expect(resolveSubmitter(undefined, '')).toBeUndefined(); // config 空署名 = 匿名，同口径
+    expect(resolveSubmitter(undefined, undefined)).toBeUndefined();
+    expect(resolveSubmitter('  @j ', undefined)).toBe('  @j '); // 非空白原样透传（归一化由服务端做）
+    expect(resolveSubmitter('me', undefined)).toBe('me');
+  });
+
+  it('--by "  "（脚本变量未设置的常见形态）→ 与未设置等价：发送体/签名体 submitter 为 null', async () => {
+    const parsed = parseCli(['claim', '--ref', 'anon-agent', '--by', '  ']);
+    // main() claim 分支同款解析链：flag（空串已归一）> config.contributor > 匿名
+    const submitter = resolveSubmitter(parsed.claim!.by, undefined);
+
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-cli-claim-'));
+    const keypair = ensureKeypair(dir);
+    let claimBody: Record<string, unknown> | undefined;
+    const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith('/verify/challenge')) {
+        return new Response(
+          JSON.stringify({ challenge: 'ch-blank', agentId: 'ag_blank', name: 'anon-agent' }),
+          { status: 200 },
+        );
+      }
+      claimBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({ verified: true, agentId: 'ag_blank', name: 'anon-agent', submitterSet: false }),
+        { status: 200 },
+      );
+    });
+
+    // exactOptionalPropertyTypes：submitter 仅在有值时传入（undefined = 匿名）
+    await claim({
+      ref: parsed.claim!.ref!,
+      apiBase: 'https://api.test',
+      dir,
+      fetchImpl,
+      ...(submitter === undefined ? {} : { submitter }),
+    });
+
+    // 发送体 submitter 为 null（与「未设置」等价，不再发误导性空串）
+    expect(claimBody!.submitter).toBeNull();
+    expect(JSON.stringify(claimBody)).toContain('"submitter":null');
+    // 签名体同样 null 且验签通过（与服务端归一化口径一致 → 不再必然 401）
+    expect(
+      verifyPayload(
+        keypair.publicKeyPem,
+        {
+          action: 'claim',
+          agentId: 'ag_blank',
+          challenge: 'ch-blank',
+          submitter: null,
+          timestamp: claimBody!.timestamp,
+        },
+        claimBody!.signature as string,
+      ),
+    ).toBe(true);
   });
 });

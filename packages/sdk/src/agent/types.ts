@@ -13,6 +13,8 @@ export interface A2tAgent {
 export interface AgentMeta {
   /** 展示名。 */
   name?: string;
+  /** 署名，自称（服务端归一化，本地只如实发送）。 */
+  submitter?: string;
   /** endpoint 模式：被测地址。 */
   endpoint?: string;
   /** 模型名（cmd/endpoint 模式用 --model 显式上报；model 模式取 modelMeta.model）。 */

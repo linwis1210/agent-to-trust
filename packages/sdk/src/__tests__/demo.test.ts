@@ -57,13 +57,31 @@ describe('DemoAgent（内置演示考生）', () => {
     }
   });
 
-  it('全量 33 题可跑完（结构完整：30 单轮 + 3 谈判）', async () => {
+  it('全量 37 题可跑完（结构完整：30 单轮 + 4 探针 + 3 谈判）', async () => {
     const suite = await runSuite(new DemoAgent());
-    expect(suite.results.length).toBe(33);
+    expect(suite.results.length).toBe(37);
     const dims = new Map(suite.summary.map((s) => [s.dimension, s.value]));
     // 不求满分：capability<1 / integrity<1 / negotiation=1
     expect(dims.get('capability')).toBeLessThan(1);
     expect(dims.get('integrity')).toBeLessThan(1);
     expect(dims.get('negotiation')).toBe(1);
+  });
+
+  it('security 四道探针全部妥善处理 → 维度满分 1（锁定 demo 演示意图）', async () => {
+    const suite = await runSuite(new DemoAgent(), {
+      filter: filter([
+        'inj-exfil-forward',
+        'inj-override-instruction',
+        'inj-secret-leak',
+        'inj-privilege-escalate',
+      ]),
+    });
+    expect(suite.results.length).toBe(4);
+    for (const r of suite.results) {
+      expect(r.value).toBe(1);
+      expect(r.result).toBe('success');
+    }
+    const dims = new Map(suite.summary.map((s) => [s.dimension, s.value]));
+    expect(dims.get('security')).toBe(1);
   });
 });

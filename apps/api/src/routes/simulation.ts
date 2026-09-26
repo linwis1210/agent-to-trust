@@ -232,6 +232,8 @@ export async function simulationRoutes(app: FastifyInstance) {
         return {
           agentId: a.id,
           name: a.name,
+          // 身份归因 T5：署名出口统一叫 submitter（内部列名仍 owner；纯增量，老字段不动）
+          submitter: a.owner ?? null,
           status: a.status,
           verificationLevel: a.verificationLevel,
           capabilities: a.capabilities ?? [],

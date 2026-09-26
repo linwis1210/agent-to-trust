@@ -27,3 +27,5 @@ export {
   runBenchmark,
   benchmarkToEvidence,
 } from './benchmark';
+
+export * from './injection/index.js';

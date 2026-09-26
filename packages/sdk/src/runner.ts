@@ -192,7 +192,7 @@ async function runNegotiation(agent: A2tAgent, sc: NegotiationScenario): Promise
   };
 }
 
-/** 跑全量评测：单轮题（30）+ 谈判题（3）。 */
+/** 跑全量评测：单轮题（34 = 30 v1 + 4 探针）+ 谈判题（3）。 */
 export async function runSuite(agent: A2tAgent, opts: RunOptions = {}): Promise<SuiteResult> {
   const seed = opts.seed ?? 'fixed-v1';
   const startedAt = new Date().toISOString();

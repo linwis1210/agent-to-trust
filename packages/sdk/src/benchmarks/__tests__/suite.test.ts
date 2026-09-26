@@ -3,12 +3,13 @@ import { extractNumber, containsAny, numberInRange } from '../graders.js';
 import { BENCHMARK_VERSION, DIMENSION_MAP, loadSuite } from '../loader.js';
 
 describe('suite v1', () => {
-  it('has 30 single-turn cases, 10 per dimension', () => {
+  it('has 34 single-turn cases: 30 v1 + 4 injection probes', () => {
     const suite = loadSuite();
-    expect(suite).toHaveLength(30);
+    expect(suite).toHaveLength(34);
     expect(loadSuite('coding')).toHaveLength(10);
     expect(loadSuite('reasoning')).toHaveLength(10);
     expect(loadSuite('honesty')).toHaveLength(10);
+    expect(loadSuite('security')).toHaveLength(4);
   });
 
   it('ids are unique', () => {

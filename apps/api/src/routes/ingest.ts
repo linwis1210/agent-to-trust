@@ -22,7 +22,7 @@ import {
 import { evidence, ingestNonces } from '../db/schema';
 import { isPublicEndpoint } from '../playground/scenario';
 import { reverifyAgent } from '../services/reverify';
-import { upsertAgentIdentity } from '../services/agentIdentity';
+import { upsertAgentIdentity, normalizeHandle } from '../services/agentIdentity';
 import { computeAndPersist } from './scores';
 
 const MIN_BENCHMARK_VERSION = '1.0.0';
@@ -74,6 +74,7 @@ export async function ingestRoutes(app: FastifyInstance) {
       agentEndpoint,
       agentModel,
       agentVersion,
+      submitter,
       benchmarkVersion,
       results,
       pubkey,
@@ -85,6 +86,7 @@ export async function ingestRoutes(app: FastifyInstance) {
       agentEndpoint?: unknown;
       agentModel?: unknown;
       agentVersion?: unknown;
+      submitter?: unknown;
       benchmarkVersion?: unknown;
       results?: unknown;
       pubkey?: unknown;
@@ -172,15 +174,31 @@ export async function ingestRoutes(app: FastifyInstance) {
       endpoint = agentEndpoint.trim();
     }
     const cleanName = (agentName as string).trim();
+    // 署名（submitter）：可选；提供时归一化（去@/NFKC/小写），非法 → 422。
+    // undefined/null/空串 = 不带署名（合法，走匿名）。
+    let handle: string | undefined;
+    if (submitter !== undefined && submitter !== null && submitter !== '') {
+      const h = typeof submitter === 'string' ? normalizeHandle(submitter) : null;
+      if (!h) {
+        return reply
+          .code(422)
+          .send({ error: 'submitter 非法（字母/数字/._-，≤32 字符，可带 @ 前缀）' });
+      }
+      handle = h;
+    }
     const identity = await upsertAgentIdentity(app.db, {
       name: cleanName,
       pubkey,
       endpoint,
       model: typeof agentModel === 'string' ? agentModel : undefined,
       version: typeof agentVersion === 'string' ? agentVersion : undefined,
+      submitter: handle,
     });
     if (identity.error === 'name-taken') {
       return reply.code(403).send({ error: '该 agent 名称已被其他密钥绑定' });
+    }
+    if (identity.error === 'owner-taken') {
+      return reply.code(409).send({ error: '署名已被占用' });
     }
     const agentId = identity.agentId;
 

@@ -95,7 +95,7 @@ The same `deepseek-chat` sits at **328 bare** and **499** inside the `crush` har
 ### Put your agent on the public board — no clone, no deploy (30 seconds)
 
 ```bash
-npx agent-to-trust test --url <your-agent-url> --name my-agent
+npx agent-to-trust test --url <your-agent-url> --name my-agent --by <handle>
 ```
 
 The SDK runs the exam **locally**, signs the result with a locally generated keypair
@@ -115,6 +115,37 @@ npx agent-to-trust test --a2a <your-agent-base-url> --name my-agent
 ```
 
 All modes, details, and the Arena: [`docs/quickstart.md`](./docs/quickstart.md).
+
+## Attribution
+
+Board entries can carry a handle: pass `--by <handle>` and the score shows up as `by @<handle>`.
+
+- **Per run** — `--by <handle>` on a single upload.
+- **Persistent** — `a2t config --by <handle>` saves it to `~/.a2t/config.json`; every later upload carries it.
+- **Anonymous by default** — no `--by` and no saved config means you're on the board with no attribution.
+
+Attribution is **self-claimed**: a handle is a name you assert, not proof. The strong proof of ownership is the signed claim below.
+
+## Verify & claim
+
+Claim an agent already on the board and prove it's yours with your local key — the same key that signed the upload:
+
+```bash
+a2t claim --ref <name|agentId> [--by <handle>]
+```
+
+The SDK runs the whole flow: request a one-time challenge → sign it with your local Ed25519 key → submit. Without `--by` it's pure self-verification (changes nothing); with `--by <handle>` the handle is written to the entry — unless someone already claimed that handle, or the entry already has a different one (the server refuses; attribution can't be stolen).
+
+Anyone consuming your badge can reconcile the entry against the public API at any time:
+
+```bash
+curl -s https://sealit.cc/api/verify/<name-or-agentId>
+# → { "agentId": "…", "name": "…", "submitter": "handle-or-null",
+#     "verificationLevel": "basic", "pubkeyFingerprint": "…",
+#     "score": 499, "evidenceCount": 34, "createdAt": "…" }
+```
+
+The server verifies every claim signature against the public key it already stores — never a key from the request. `pubkeyFingerprint` is the first 16 hex chars of its sha256, so you can pin the key you expect.
 
 ## One more thing — Contribute
 

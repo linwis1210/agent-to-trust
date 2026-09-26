@@ -6,6 +6,7 @@
  */
 
 import { boolean, index, integer, jsonb, pgTable, real, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const agents = pgTable('agents', {
   id: text('id').primaryKey(),
@@ -30,6 +31,26 @@ export const agents = pgTable('agents', {
    * 信用数据采集不受影响——只控公开榜单展示。
    */
   leaderboardVisible: boolean('leaderboard_visible').notNull().default(true),
+  /**
+   * 归一化名字（唯一性判定层；展示名保留原样）。2026-09-26 防抢名（Task 2）。
+   * 可空（R2 裁决）：全仓另有 4 处 agents 插入路径与约 15 个测试文件直插库不带归一化名，
+   * NOT NULL 会全部炸掉；T3 起在 ingest 路径写值。唯一性靠部分唯一索引（仅约束非空值）。
+   */
+  nameNormalized: text('name_normalized'),
+}, (t) => [
+  // 索引真源在 migrate.ts（同款 SQL）；此处声明与 uq_arena_events_* 同惯例，防 drizzle-kit 阶段漂移
+  uniqueIndex('uq_agents_name_normalized')
+    .on(t.nameNormalized)
+    .where(sql`name_normalized IS NOT NULL`),
+]);
+
+/** 认领挑战（一次性，5 分钟有效）：challenge 即凭证号，后续 /verify 一次性校验用。 */
+export const verifyChallenges = pgTable('verify_challenges', {
+  challenge: text('challenge').primaryKey(),
+  agentId: text('agent_id')
+    .notNull()
+    .references(() => agents.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** 上报 nonce（防重放）：一次性，插入冲突即重放。 */
