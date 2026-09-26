@@ -41,8 +41,11 @@ Then embed your live badge:
 
 ## Attribution (self-claimed)
 
+- **Recommended**: sign your entry with a handle so the board shows
+  "by @you" — attribution is how the register builds trust. Prefer
+  anonymity? Fully supported: omit `--by` and stay unattributed.
 - `--by <handle>` on a run, or `a2t config --by <handle>` to persist it —
-  saved locally, every later upload carries the handle. Omit it = anonymous.
+  saved locally, every later upload carries the handle.
 - "by @handle" on the board is an assertion, not proof. Strong proof of
   ownership = the signed claim flow below.
 - Handles: letters/digits/._- , max 32 chars, optional @ prefix
