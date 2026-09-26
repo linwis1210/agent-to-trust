@@ -52,6 +52,9 @@ export function buildIngestPayload(
     agentEndpoint: publicEndpoint,
     agentModel: meta.model ?? meta.modelMeta?.model,
     agentVersion: meta.version,
+    // 署名（自称，服务端归一化）：undefined 时 JSON.stringify 自动省略该键，签名自然不含它；
+    // 提供时进签名体（服务端验签覆盖全 body）。
+    submitter: meta.submitter,
     modelMeta: meta.modelMeta,
     benchmarkVersion: suite.benchmarkVersion,
     seed: suite.seed,

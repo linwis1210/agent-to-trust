@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseCli, validateJoinOptions, validateTestOptions } from '../cli.js';
+import { mergeContributor, parseCli, validateJoinOptions, validateTestOptions } from '../cli.js';
 import { loadConfig, saveConfig } from '../config.js';
 
 describe('parseCli', () => {
@@ -95,6 +95,28 @@ describe('parseCli', () => {
     expect(parseCli([]).command).toBe('help');
   });
 
+  it('parses --by 署名（test）', () => {
+    const p = parseCli(['test', '--url', 'x', '--by', 'jeremy']);
+    expect(p.test?.by).toBe('jeremy');
+  });
+
+  it('parses --by 署名（join，透传不报错）', () => {
+    const p = parseCli(['join', '--url', 'x', '--by', 'jeremy']);
+    expect(p.join?.by).toBe('jeremy');
+  });
+
+  it('parses config 子命令（无参 → 查看配置）', () => {
+    const p = parseCli(['config']);
+    expect(p.command).toBe('config');
+    expect(p.config?.by).toBeUndefined();
+  });
+
+  it('parses config --by（写署名）', () => {
+    const p = parseCli(['config', '--by', 'jeremy']);
+    expect(p.command).toBe('config');
+    expect(p.config?.by).toBe('jeremy');
+  });
+
   it('unknown command throws', () => {
     expect(() => parseCli(['foo'])).toThrow(/未知命令/);
   });
@@ -134,6 +156,16 @@ describe('config roundtrip', () => {
     const { writeFileSync } = require('node:fs') as typeof import('node:fs');
     writeFileSync(join(dir, 'config.json'), '{broken');
     expect(loadConfig(dir)).toEqual({});
+  });
+
+  it('config --by：写 contributor（本地只 trim，归一化归服务端）且保留其它字段', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-test-'));
+    saveConfig({ agentName: 'x', apiBase: 'http://api.test' }, dir);
+    saveConfig(mergeContributor(loadConfig(dir), '  jeremy '), dir);
+    const c = loadConfig(dir);
+    expect(c.contributor).toBe('jeremy');
+    expect(c.agentName).toBe('x');
+    expect(c.apiBase).toBe('http://api.test');
   });
 });
 

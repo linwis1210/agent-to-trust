@@ -44,6 +44,30 @@ describe('buildIngestPayload', () => {
     }
   });
 
+  it('meta 带 submitter → body 含 submitter 且验签通过', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-up-'));
+    const keypair = ensureKeypair(dir);
+    const suite = await fixtureSuite();
+    const payload = buildIngestPayload(
+      suite,
+      { name: 'signed-agent', submitter: 'jeremy' },
+      keypair,
+    );
+    expect(payload.submitter).toBe('jeremy');
+    const { signature, ...body } = payload;
+    expect(verifyPayload(keypair.publicKeyPem, body, signature as string)).toBe(true);
+  });
+
+  it('无署名 → body 无 submitter 键（匿名合法）', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'a2t-up-'));
+    const keypair = ensureKeypair(dir);
+    const suite = await fixtureSuite();
+    const payload = buildIngestPayload(suite, { name: 'anon-agent' }, keypair);
+    expect(payload.submitter).toBeUndefined();
+    // 跨线语义：JSON 序列化后不得出现 submitter（服务端验签走同一序列化）
+    expect(JSON.stringify(payload)).not.toContain('submitter');
+  });
+
   it('公网 endpoint 照常上报', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'a2t-up-'));
     const keypair = ensureKeypair(dir);
