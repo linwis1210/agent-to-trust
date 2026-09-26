@@ -10,6 +10,17 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../db/client';
 import { agents } from '../db/schema';
 
+/** 名字归一化：NFKC → 空白折叠 → trim → 小写。用于唯一性与同名判定。 */
+export function normalizeAgentName(raw: string): string {
+  return raw.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/** 署名归一化：去前导 @、NFKC、trim、小写；非法返回 null。 */
+export function normalizeHandle(raw: string): string | null {
+  const h = raw.normalize('NFKC').trim().replace(/^@+/, '').toLowerCase();
+  return /^[a-z0-9][a-z0-9_.-]{0,31}$/.test(h) ? h : null;
+}
+
 function slugify(name: string): string {
   return (
     name
