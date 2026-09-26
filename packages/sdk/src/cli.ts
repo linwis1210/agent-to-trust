@@ -288,6 +288,20 @@ export function mergeContributor(config: A2tConfig, by: string): A2tConfig {
   return { ...config, contributor: by.trim() };
 }
 
+/**
+ * claim 署名解析链：--by flag > config.contributor > 无（匿名）。绝不自动推断（D7 隐私红线）。
+ * flag 值 trim 后为空串 → 视为未设置（脚本变量未设置时 `--by "$BY"` 的常见形态）：
+ * 照发空串会与服务端归一化（'' → null）错位，签名体不一致 → 必然 401「签名验证失败」，误导排查。
+ * config.contributor 空串同口径（config --by "" 存的就是空署名 = 匿名）。
+ */
+export function resolveSubmitter(
+  by: string | undefined,
+  configContributor: string | undefined,
+): string | undefined {
+  const flag = by !== undefined && by.trim() === '' ? undefined : by;
+  return flag ?? (configContributor || undefined);
+}
+
 /** 校验 test 参数。返回错误信息，或 null 表示通过。 */
 export function validateTestOptions(t: TestOptions): string | null {
   if (!t.url && !t.model && !t.cmd && !t.a2a) {
@@ -462,7 +476,8 @@ async function main(): Promise<void> {
       const config = loadConfig();
       const apiBase = c.apiBase ?? config.apiBase ?? 'https://sealit.cc/api';
       // 署名解析链与 test/join 一致：--by flag > config.contributor > 无。绝不自动推断（D7 隐私红线）。
-      const submitter = c.by ?? config.contributor;
+      // --by 空串/纯空白视为未设置（照发空串会与服务端 null 归一化错位 → 必然 401，误导排查）。
+      const submitter = resolveSubmitter(c.by, config.contributor);
       console.log(`[a2t] 认领 ${c.ref}（${submitter ? `署名 @${submitter}` : '纯自证，不带署名'}）…`);
       try {
         const res = await claim({ ref: c.ref!, apiBase, submitter, dir: c.dir });
