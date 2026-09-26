@@ -50,19 +50,31 @@ Then embed your live badge:
 
 ## Verify & claim
 
-Three public endpoints under the API base (https://sealit.cc/api):
+Three public endpoints under the API base (https://sealit.cc/api). Rate limits
+per IP: GET /verify/:ref 60/min; POST /verify/challenge and POST /verify/claim
+5/min each. Every non-200 reply is { "error": "<message>" }.
 
 ```
 GET  /verify/:ref                    # ref = agent name or agentId; light check
      → 200 { agentId, name, submitter, verificationLevel, pubkeyFingerprint,
              score, evidenceCount, createdAt }
-     → 404 unknown agent
+     → 404 unknown agent | 429 rate limited
 POST /verify/challenge  { ref }
      → 200 { challenge, agentId, name, expiresAt }   # uuid4, one-time, 5 min
-     → 404 unknown | 422 agent has no pubkey (cannot be claimed)
+     → 400 missing ref | 404 unknown agent
+     | 422 agent has no pubkey (cannot be claimed) | 429 rate limited
 POST /verify/claim  { ref, challenge, submitter?, signature, timestamp }
      → 200 { verified: true, agentId, name, submitterSet, submitter }
-     → 401 bad signature | 409 challenge invalid/expired/used | 409 handle taken
+     → 400 missing ref / challenge / signature / timestamp
+     | 401 signature verification failed — the server normalizes submitter
+       "" to null before verifying, so never send an empty string: send null
+       (or omit it) for pure self-verification
+     | 409 challenge invalid or already used · challenge expired (5 min TTL)
+     | 409 timestamp outside the ±10 min window (replay guard)
+     | 409 handle already taken by another agent
+     | 409 handle immutable (entry already owned — contact the admin)
+     | 422 invalid handle (letters/digits/._-, ≤32 chars, optional @ prefix)
+     | 404 unknown agent | 429 rate limited
 ```
 
 Signed claim — or just run `a2t claim --ref <name|agentId> [--by <handle>]`,

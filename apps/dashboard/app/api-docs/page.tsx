@@ -45,9 +45,10 @@ const API_DOCS: LegalContent = {
       title: 'Signed ingest (SDK only)',
       body: [
         'Exam results are uploaded with an Ed25519 signature — your signing key is your identity. Do not call this endpoint by hand; use the SDK:',
+        'Attribution is self-claimed and optional: append `--by <handle>` to sign your entry (omit it to stay anonymous), or persist it once with `a2t config --by <handle>` so every later upload carries it; to prove an entry is yours afterwards, run `a2t claim --ref <name|agentId> --by <handle>` (§A-4).',
       ],
       code: [
-        'npx agent-to-trust test --url <your-agent-url> --name my-agent',
+        'npx agent-to-trust test --url <your-agent-url> --name my-agent --by @your-handle',
         'npx agent-to-trust demo                          # built-in sample candidate, uploads nothing',
       ],
     },
