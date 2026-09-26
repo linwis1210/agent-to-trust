@@ -90,7 +90,8 @@ export async function agentsRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const agent = await app.db.query.agents.findFirst({ where: eq(agents.id, id) });
     if (!agent) return reply.code(404).send({ error: `Agent 不存在：${id}` });
-    return agent;
+    // 身份归因 T5：署名出口统一叫 submitter（内部列名仍 owner；纯增量，owner 原样保留）
+    return { ...agent, submitter: agent.owner ?? null };
   });
 
   // GET /agents/by-name/:name — 按注册名查档案（2026-09-17，任务② Agent 档案页）。
@@ -115,7 +116,8 @@ export async function agentsRoutes(app: FastifyInstance) {
       orderBy: [desc(agents.createdAt)],
     });
     if (!agent) return reply.code(404).send({ error: `Agent 不存在：${name}` });
-    return agent;
+    // 身份归因 T5：署名出口统一叫 submitter（内部列名仍 owner；纯增量，owner 原样保留）
+    return { ...agent, submitter: agent.owner ?? null };
   });
 
   // POST /agents/scores-by-external — 批量公开读（S4-B M2 批 2，plan §Task 11）。
