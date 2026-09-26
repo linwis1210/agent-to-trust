@@ -169,6 +169,26 @@ CREATE TABLE IF NOT EXISTS page_visits (
 );
 -- 2026-09-05 反馈硬化：已读标记（箱满按未处理数计；摘要读走后置 handled_at 腾容量）
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS handled_at timestamptz;
+
+-- 身份归因 Task 2（2026-09-26 防抢名）：归一化名可空（R2 裁决：全仓另有 4 处 agents 直插路径
+-- 与既有测试不带归一化名，NOT NULL 会全部炸掉；T3 起在 ingest 写值），唯一性靠部分唯一索引
+-- 只约束非空值。顺序：先加列 → 回填 → 建索引。
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS name_normalized text;
+
+-- 回填存量：小写 + 折叠内部空白为单空格 + 去首尾空白（与 TS normalizeAgentName 对齐，
+-- 差 NFKC 一环：SQL 侧无等价内置，T3 起写值补齐）。JS 模板串内写双反斜杠的 s+，SQL 端才收到单反斜杠+s。
+-- 只补 NULL 行：幂等（二次跑 0 行），且不覆盖后续 T3 用 TS 归一化写入的精确值。
+UPDATE agents SET name_normalized = lower(btrim(regexp_replace(name, '\\s+', ' ', 'g')))
+WHERE name_normalized IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agents_name_normalized ON agents(name_normalized) WHERE name_normalized IS NOT NULL;
+
+-- 认领挑战（一次性，5 分钟有效）：challenge 即凭证号，后续 /verify 一次性校验用。
+CREATE TABLE IF NOT EXISTS verify_challenges (
+  challenge text PRIMARY KEY,
+  agent_id text NOT NULL REFERENCES agents(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 export async function migrate(url: string): Promise<void> {

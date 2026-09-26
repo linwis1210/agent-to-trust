@@ -108,3 +108,58 @@ describe('upsertAgentIdentity 同名补绑 pubkey', () => {
     expect(dup.statusCode).toBe(403);
   });
 });
+
+describe('Task 2 迁移：agents.name_normalized + verify_challenges', () => {
+  it('agents.name_normalized 列存在', async () => {
+    const res = await db.execute(
+      sql`SELECT 1 FROM information_schema.columns WHERE table_name = 'agents' AND column_name = 'name_normalized'`,
+    );
+    expect(res.rows).toHaveLength(1);
+  });
+
+  it('uq_agents_name_normalized 部分唯一索引存在（WHERE name_normalized IS NOT NULL）', async () => {
+    const res = await db.execute(
+      sql`SELECT indexdef FROM pg_indexes WHERE tablename = 'agents' AND indexname = 'uq_agents_name_normalized'`,
+    );
+    expect(res.rows).toHaveLength(1);
+    const def = String((res.rows[0] as { indexdef: string }).indexdef);
+    expect(def).toContain('UNIQUE');
+    expect(def).toContain('(name_normalized) WHERE (name_normalized IS NOT NULL)');
+  });
+
+  it('verify_challenges 表存在（challenge/agent_id/created_at）', async () => {
+    const res = await db.execute(
+      sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'verify_challenges' ORDER BY ordinal_position`,
+    );
+    const names = res.rows.map((r) => String((r as { column_name: string }).column_name));
+    expect(names).toEqual(expect.arrayContaining(['challenge', 'agent_id', 'created_at']));
+  });
+
+  it('部分唯一索引语义：非空归一化名冲突 23505；NULL 不入索引可共存', async () => {
+    // 用裸 pg Pool 断言错误码（drizzle 0.38 会把 pg 错误包一层，裸驱动拿 code 最直接）
+    const { Pool } = await import('pg');
+    const pool = new Pool({ connectionString: TEST_URL });
+    const a = `uq-a-${randomUUID()}`;
+    const b = `uq-b-${randomUUID()}`;
+    await pool.query('INSERT INTO agents (id, name, name_normalized) VALUES ($1, $2, $3)', [
+      a,
+      a,
+      'dup-target',
+    ]);
+    await expect(
+      pool.query('INSERT INTO agents (id, name, name_normalized) VALUES ($1, $2, $3)', [
+        b,
+        b,
+        'dup-target',
+      ]),
+    ).rejects.toMatchObject({ code: '23505' });
+    // 部分索引：NULL 不受约束，多行共存
+    const c = `uq-null1-${randomUUID()}`;
+    const d = `uq-null2-${randomUUID()}`;
+    await pool.query('INSERT INTO agents (id, name) VALUES ($1, $1)', [c]);
+    await pool.query('INSERT INTO agents (id, name) VALUES ($1, $1)', [d]);
+    // 清理自插数据，不污染后续用例
+    await pool.query('DELETE FROM agents WHERE id = ANY($1)', [[a, b, c, d]]);
+    await pool.end();
+  });
+});
