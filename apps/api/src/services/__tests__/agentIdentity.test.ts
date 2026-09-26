@@ -33,4 +33,14 @@ describe('normalizeHandle', () => {
   it('合法字符集：字母数字 . _ -', () => {
     expect(normalizeHandle('j.doe_01-x')).toBe('j.doe_01-x');
   });
+  it('边界：首字符必须是字母数字（. _ - 开头非法）', () => {
+    expect(normalizeHandle('.lead')).toBeNull();
+    expect(normalizeHandle('_lead')).toBeNull();
+    expect(normalizeHandle('-lead')).toBeNull();
+  });
+  it('边界：32 字符合法（上限内）、33 字符非法、空串非法', () => {
+    expect(normalizeHandle('a'.repeat(32))).toBe('a'.repeat(32));
+    expect(normalizeHandle('a'.repeat(33))).toBeNull();
+    expect(normalizeHandle('')).toBeNull();
+  });
 });
