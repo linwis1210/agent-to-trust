@@ -140,6 +140,11 @@ function Row({
                 {/^\d/.test(e.agentVersion) ? `v${e.agentVersion}` : e.agentVersion}
               </span>
             )}
+            {e.submitter && (
+              <span className="chip border-hairline text-dim">
+                {t.leaderboard.by} @{e.submitter}
+              </span>
+            )}
             <SourceTag source={e.source} />
             {isBehavior && e.counterpartModes?.includes("live") && (
               <span className="chip border-seal/30 bg-seal/5 font-semibold text-seal">

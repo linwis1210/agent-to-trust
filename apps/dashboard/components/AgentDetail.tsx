@@ -12,7 +12,7 @@ import {
   type ScoreResponse,
 } from '@/lib/api';
 import { useLocale, useT, fill, mapApiError } from '@/lib/i18n';
-import { ArrowLeft, ArrowUpRight, CalendarDays, Eye, EyeOff, Link2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, CalendarDays, Eye, EyeOff, Link2, ShieldCheck, User } from 'lucide-react';
 import { MedalBar } from './MedalBar';
 import { ScoreSeal } from './ScoreSeal';
 import { CopyButton } from './CopyButton';
@@ -187,6 +187,15 @@ export function AgentDetail({ agentId, onBack }: { agentId: string; onBack: () =
                   >
                     <ShieldCheck size={11} />
                     {agent.verificationLevel}
+                  </span>
+                  <span
+                    className="chip border-hairline bg-surface px-2.5 py-1 text-dim"
+                    title={t.detail.submittedByHint}
+                  >
+                    <User size={11} />
+                    {agent.submitter
+                      ? `${t.detail.submittedBy} @${agent.submitter}`
+                      : `${t.detail.submittedBy} ${t.detail.anonymous}`}
                   </span>
                   <span className="chip border-hairline bg-surface px-2.5 py-1 text-dim">
                     <span

@@ -39,6 +39,8 @@ export interface Agent {
   id: string;
   name: string;
   owner: string | null;
+  /** 提交者署名（SDK --by 自称上报；未署名为 null）。 */
+  submitter?: string | null;
   status: string;
   verificationLevel: string;
   capabilities: string[] | null;
@@ -115,6 +117,8 @@ export interface LeaderboardEntry {
   model: string | null;
   /** 被测 agent 软件版本（未上报为 null）。 */
   agentVersion: string | null;
+  /** 提交者署名（自称，--by 上报；未署名为 null）。 */
+  submitter?: string | null;
   /** 已达成勋章（每维最多一枚，服务端权威派生；客户端不得自报）。 */
   badges: DimensionBadge[];
   /** 各维度明细（排序/筛选用；不含证据数）。 */
