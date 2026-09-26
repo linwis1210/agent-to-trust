@@ -6,6 +6,7 @@
  *   a2t test --url <endpoint> [--name <agent名>]
  *   a2t test --model <model> --base-url <url> --api-key <key> [--persona <提示>] [--name <agent名>]
  *   a2t join   (Phase 2: 进入 Arena 模拟考场)
+ *   a2t claim  (事后认领/自证身份：私钥验签)
  *   a2t init   (L1 埋点初始化，后续版本)
  */
 import { parseArgs } from 'node:util';
@@ -19,6 +20,7 @@ import { loadConfig, saveConfig, type A2tConfig } from './config.js';
 import { BENCHMARK_VERSION } from './benchmarks/loader.js';
 import { runSuite } from './runner.js';
 import { uploadResults } from './upload.js';
+import { claim } from './claim.js';
 import { runJoinLoop } from './arena.js';
 import { runDemo } from './demo.js';
 
@@ -76,11 +78,22 @@ export interface ConfigCliOptions {
   by?: string;
 }
 
+export interface ClaimCliOptions {
+  /** 榜上的 agent 名或 agentId（必填）。 */
+  ref?: string;
+  /** 署名（可选；解析链与 test/join 一致：flag > config.contributor > 无，绝不自动推断）。 */
+  by?: string;
+  apiBase?: string;
+  /** 密钥目录（多身份/测试用，默认 ~/.a2t）。 */
+  dir?: string;
+}
+
 export interface ParsedCommand {
-  command: 'test' | 'join' | 'init' | 'demo' | 'config' | 'help';
+  command: 'test' | 'join' | 'init' | 'demo' | 'config' | 'claim' | 'help';
   test?: TestOptions;
   join?: JoinCliOptions;
   config?: ConfigCliOptions;
+  claim?: ClaimCliOptions;
 }
 
 const USAGE = `a2t — A2T 本地考场
@@ -107,6 +120,10 @@ const USAGE = `a2t — A2T 本地考场
       内置演示考生跑完整 37 题（零依赖：无端口/无网络/无 key）
       纯本地演示，不上传榜单
 
+  a2t claim --ref <name|agentId> [--by <署名>]
+      认领/自证身份：验证你持有上榜 agent 的私钥（事后补署名/自证）
+      用与上传相同的本地密钥（~/.a2t/）签名挑战；--by 不设则纯自证（不动已有署名）
+
 选项:
   --name <agent名>    榜单展示名（默认取 config.agentName 或目录名）
   --by <署名>        你的署名 handle（如 @jeremy；服务端归一化，非法会被拒）
@@ -126,6 +143,8 @@ const USAGE = `a2t — A2T 本地考场
   a2t config [--by <署名>]
       无参数：打印当前配置（~/.a2t/config.json）
       --by <署名>：保存默认署名（本地只 trim，归一化由服务端做），后续 test 上报自动带上
+  a2t claim --ref <name|agentId> [--by <署名>]
+      认领榜上 agent：私钥验签自证；--by 补署名（已被占用/不可变更由服务端拒绝）
   a2t init    埋点初始化（后续版本）
   a2t help    显示本帮助
 `;
@@ -236,9 +255,32 @@ export function parseCli(argv: string[]): ParsedCommand {
     });
     return { command: 'config', config: { by: values.by } };
   }
+  if (command === 'claim') {
+    const { values } = parseArgs({
+      args: rest,
+      options: {
+        ref: { type: 'string' },
+        by: { type: 'string' },
+        'api-base': { type: 'string' },
+        dir: { type: 'string' },
+      },
+    });
+    if (!values.ref) {
+      throw new Error('claim 需要 --ref <name|agentId>（要认领的榜上 agent）');
+    }
+    return {
+      command: 'claim',
+      claim: {
+        ref: values.ref,
+        by: values.by,
+        apiBase: values['api-base'] ?? process.env.A2T_API_URL,
+        dir: values.dir,
+      },
+    };
+  }
   if (command === 'demo') return { command: 'demo' };
   if (command === 'init') return { command: 'init' };
-  throw new Error(`未知命令: ${command}（可用: test | join | demo | config | init | help）`);
+  throw new Error(`未知命令: ${command}（可用: test | join | demo | config | claim | init | help）`);
 }
 
 /** config --by 写入：本地只 trim（归一化由服务端做），保留其它字段。 */
@@ -411,6 +453,23 @@ async function main(): Promise<void> {
         }
       } catch (e) {
         console.error(`[a2t] Arena 失败：${(e as Error).message}`);
+        process.exit(1);
+      }
+      return;
+    }
+    case 'claim': {
+      const c = parsed.claim!;
+      const config = loadConfig();
+      const apiBase = c.apiBase ?? config.apiBase ?? 'https://sealit.cc/api';
+      // 署名解析链与 test/join 一致：--by flag > config.contributor > 无。绝不自动推断（D7 隐私红线）。
+      const submitter = c.by ?? config.contributor;
+      console.log(`[a2t] 认领 ${c.ref}（${submitter ? `署名 @${submitter}` : '纯自证，不带署名'}）…`);
+      try {
+        const res = await claim({ ref: c.ref!, apiBase, submitter, dir: c.dir });
+        console.log(`[a2t] 认领成功: ${res.name}（已验证持有私钥）`);
+        console.log(res.submitterSet && submitter ? `[a2t] 署名: @${submitter}` : '[a2t] 未设置署名');
+      } catch (e) {
+        console.error(`[a2t] 认领失败：${(e as Error).message}`);
         process.exit(1);
       }
       return;

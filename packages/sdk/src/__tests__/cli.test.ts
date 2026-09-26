@@ -117,6 +117,29 @@ describe('parseCli', () => {
     expect(p.config?.by).toBe('jeremy');
   });
 
+  it('parses claim 子命令（--ref 必带，--by/--api-base/--dir 透传）', () => {
+    const p = parseCli([
+      'claim',
+      '--ref',
+      'my-agent',
+      '--by',
+      'jeremy',
+      '--api-base',
+      'http://api.test',
+      '--dir',
+      '/tmp/a2t-x',
+    ]);
+    expect(p.command).toBe('claim');
+    expect(p.claim?.ref).toBe('my-agent');
+    expect(p.claim?.by).toBe('jeremy');
+    expect(p.claim?.apiBase).toBe('http://api.test');
+    expect(p.claim?.dir).toBe('/tmp/a2t-x');
+  });
+
+  it('claim 缺 --ref → 抛错', () => {
+    expect(() => parseCli(['claim'])).toThrow(/--ref/);
+  });
+
   it('unknown command throws', () => {
     expect(() => parseCli(['foo'])).toThrow(/未知命令/);
   });
