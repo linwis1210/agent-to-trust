@@ -196,3 +196,4 @@ export function computeScore(
 export * from './badges.js';
 export * from './consistency.js';
 export * from './dedup.js';
+export * from './snapshot.js';

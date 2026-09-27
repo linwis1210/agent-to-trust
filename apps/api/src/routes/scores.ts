@@ -7,6 +7,7 @@ import {
   computeScore,
   dedupeByUriLatest,
   realEvidenceCounts,
+  shouldRecordSnapshot,
   REAL_EVIDENCE_SOURCES,
   type Badge,
   type EvidencePoint,
@@ -96,13 +97,23 @@ export async function computeAndPersist(app: FastifyInstance, agentId: string) {
     })
     .returning();
 
-  await app.db.insert(scoreSnapshots).values({
-    id: randomUUID(),
-    agentId,
-    score: result.score,
-    modelVersion: result.modelVersion,
-    dimensionsSnapshot: result.dimensions,
-  });
+  // 重考收口（2026-09-27 修复）：快照是 reliability（重现性）的观测输入——只在
+  // 「有新证据落库」时写；纯重算（换口径 / 刷分 / dashboard 读触发）不写，
+  // 否则会把「代码/口径造成的分数跳变」误当成 agent 行为漂移，污染可靠性。
+  const lastSnapAt = pastSnaps.length > 0 ? pastSnaps[pastSnaps.length - 1]!.snapshotAt : null;
+  const newestEvidenceAt = active.reduce<Date | null>(
+    (acc, r) => (acc == null || r.createdAt > acc ? r.createdAt : acc),
+    null,
+  );
+  if (shouldRecordSnapshot(lastSnapAt, newestEvidenceAt)) {
+    await app.db.insert(scoreSnapshots).values({
+      id: randomUUID(),
+      agentId,
+      score: result.score,
+      modelVersion: result.modelVersion,
+      dimensionsSnapshot: result.dimensions,
+    });
+  }
 
   return created;
 }
