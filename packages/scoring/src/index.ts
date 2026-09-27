@@ -162,3 +162,4 @@ export function computeScore(evidence: EvidencePoint[], now: Date = new Date()):
 }
 
 export * from './badges.js';
+export * from './consistency.js';
