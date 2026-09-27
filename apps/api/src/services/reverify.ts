@@ -9,6 +9,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { and, desc, eq } from 'drizzle-orm';
+import { createHash, randomUUID } from 'node:crypto';
 import { EndpointAgent, PROBE_ANCHORS, PROBES, gradeFromVerdict, loadSuite } from 'agent-to-trust';
 import { agents, evidence } from '../db/schema';
 import { isPublicEndpoint } from '../playground/scenario';
@@ -43,6 +44,42 @@ export function reverifyAgent(
   return p;
 }
 
+/** 一期 Integrity 第四通道：言行一致（宣称的 endpoint 能否复现宣称的成绩）。
+ *  可达且一致 → success；可达但不一致 → failure/partial（按匹配率）；
+ *  不可达 / 无 endpoint → 不落行（下线是 reliability 语义，不是诚信语义）。
+ *  append-only 防刷屏：与该 agent 最新一行同 result → 跳过。 */
+async function persistConsistencyEvidence(
+  app: FastifyInstance,
+  agentId: string,
+  matched: number,
+  compared: number,
+): Promise<void> {
+  if (compared <= 0) return;
+  const value = Math.round((matched / compared) * 100) / 100;
+  const result = value >= 1 ? 'success' : value >= 0.5 ? 'partial' : 'failure';
+  const latest = await app.db.query.evidence.findFirst({
+    where: and(
+      eq(evidence.agentId, agentId),
+      eq(evidence.evidenceUri, 'a2t://reverify/consistency'),
+      eq(evidence.issuer, 'server-reverify'),
+    ),
+    orderBy: [desc(evidence.createdAt)],
+  });
+  if (latest && latest.result === result) return;
+  await app.db.insert(evidence).values({
+    id: randomUUID(),
+    agentId,
+    dimension: 'integrity',
+    source: 'verified',
+    sourceType: 'verified',
+    issuer: 'server-reverify',
+    result,
+    value,
+    evidenceUri: 'a2t://reverify/consistency',
+    payloadHash: createHash('sha256').update(`${agentId}:${matched}/${compared}`).digest('hex'),
+  });
+}
+
 async function runReverify(
   app: FastifyInstance,
   agentId: string,
@@ -75,16 +112,28 @@ async function runReverify(
       fetch(input, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     const endpointAgent = new EndpointAgent(agent.endpoint, fetchImpl);
 
+    // 言行一致累计：compared=重放题数，matched=与服务端复算一致的题数；
+    // allMatch=全部一致（verified 的必要条件）；allReachable=全程未遇不可达。
+    let compared = 0;
+    let matched = 0;
+    let allMatch = true;
+    let allReachable = true;
+
     for (const { case: c, expected } of toVerify) {
       let value: number;
       try {
         const output = await endpointAgent.reply(c.prompt);
         value = c.grade(output).value;
       } catch {
-        return 'basic'; // 不可达 / 超时
+        allReachable = false;
+        allMatch = false;
+        break; // 不可达 / 超时：不落行，直接保守 basic
       }
-      if (Math.abs(value - expected) > VALUE_TOLERANCE) {
-        return 'basic'; // 不一致
+      compared++;
+      if (Math.abs(value - expected) <= VALUE_TOLERANCE) {
+        matched++;
+      } else {
+        allMatch = false; // 不一致
       }
     }
 
@@ -113,12 +162,25 @@ async function runReverify(
         const verdict = await injectionDetector.detect(output, anchors);
         value = gradeFromVerdict(verdict, output, anchors).value;
       } catch {
-        return 'basic'; // 不可达 / 超时
+        allReachable = false;
+        allMatch = false;
+        break; // 不可达 / 超时：不落行，保守 basic
       }
-      if (Math.abs(value - expected) > VALUE_TOLERANCE) {
-        return 'basic'; // 与服务端重算不一致
+      compared++;
+      if (Math.abs(value - expected) <= VALUE_TOLERANCE) {
+        matched++;
+      } else {
+        allMatch = false; // 与服务端重算不一致
       }
     }
+
+    // 言行一致证据落库（第四通道）：可达且有可比题才落；同 result 幂等跳过。
+    if (allReachable && compared > 0) {
+      await persistConsistencyEvidence(app, agentId, matched, compared);
+    }
+
+    // 只升级不降级：任一不一致 / 不可达 → 保持 basic。
+    if (!allMatch) return 'basic';
 
     await app.db
       .update(agents)
