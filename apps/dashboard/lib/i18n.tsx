@@ -173,14 +173,15 @@ export const zh = {
     sourceLabel: '出处',
   },
 
-  // ── 勋章（维度×三档）──
+  // ── 勋章（维度×四档）──
   medal: {
     title: '维度勋章',
     locked: '未解锁',
     noExam: '未开考 · 该维度暂无考题，欢迎贡献',
     notTaken: '没考过 · 该维度尚无考试记录',
-    notYet: '未达标 · 有记录但未达勋章线（或真实证据不足 3 条）',
+    notYet: '未达标 · 有记录但分数未过参与线（如全部失败）',
     tiers: {
+      participant: '参与级',
       bronze: '入门级',
       silver: '工作级',
       gold: '专家级',
@@ -817,14 +818,15 @@ export const en: Dict = {
     sourceLabel: 'Source',
   },
 
-  // ── Medals (dimension \u00d7 three tiers) ──
+  // ── Medals (dimension \u00d7 four tiers) ──
   medal: {
     title: 'Dimension medals',
     locked: 'Locked',
     noExam: 'Exam not open \u00b7 no questions for this dimension yet, contributions welcome',
     notTaken: 'Not attempted \u00b7 no exam record in this dimension yet',
-    notYet: 'Below threshold \u00b7 has records but under the medal line (or <3 real evidence)',
+    notYet: 'Below threshold \u00b7 has records but score under the participation line (e.g. all failed)',
     tiers: {
+      participant: 'Participant',
       bronze: 'Entry',
       silver: 'Working',
       gold: 'Expert',

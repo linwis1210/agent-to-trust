@@ -21,8 +21,8 @@ import type { DimensionBadge } from '@/lib/api';
  *
  * 母版：**平顶六边形**（封蜡/钢印语义，圆形头像堆里一眼跳出）。
  * 档位编码 = **填充度**（小尺寸下唯一可靠的形状信号，灰度/色盲均可辨）：
- *   入门 = 描边（空心）· 进阶 = 上半填充 · 专家 = 实心（字形反白）
- * 颜色只用设计 token：入门 amber / 进阶 dim / 专家 brass（顶档与 AAA·前三同色）。
+ *   参与 = 描边（空心·哑光铁灰）· 入门 = 描边（空心）· 进阶 = 上半填充 · 专家 = 实心（字形反白）
+ * 颜色只用设计 token：参与 dim/70 / 入门 dim / 进阶 amber / 专家 brass（顶档与 AAA·前三同色）。
  * 未解锁 = 灰档虚线描边（可见、不抢戏）。
  * 每维最多一枚（后端取最高档）。
  */
@@ -38,11 +38,14 @@ const ICONS: Record<Dimension, typeof Brain> = {
   integrity: Fingerprint,
 };
 
-type Tier = 'bronze' | 'silver' | 'gold';
+type Tier = 'participant' | 'bronze' | 'silver' | 'gold';
 
 /** 档位 → 颜色 token + 填充模式。
- * 色阶单调递增：dim（棕灰）→ amber（燃橙）→ brass（黄铜）；配合填充度形成双通道。 */
+ * 色阶单调递增：dim/70（哑光铁灰）→ dim（棕灰）→ amber（燃橙）→ brass（黄铜）；配合填充度形成双通道。
+ * participant（0927 热修方案2）：最低档，1 条真实证据即亮；与 bronze 同为空心描边，靠 tone 压暗一档，
+ * 与未解锁灰档（虚线 + fill-panel）靠实线描边区分。 */
 const TIER_META: Record<Tier, { tone: string; fill: 'none' | 'half' | 'full' }> = {
+  participant: { tone: 'text-dim/70', fill: 'none' },
   bronze: { tone: 'text-dim', fill: 'none' },
   silver: { tone: 'text-amber', fill: 'half' },
   gold: { tone: 'text-brass', fill: 'full' },

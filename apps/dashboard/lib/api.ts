@@ -91,7 +91,7 @@ export interface ScoreResponse {
 /** 维度勋章（服务端权威派生：只认真实证据，详见 @a2t/scoring badgesFor）。 */
 export interface DimensionBadge {
   dimension: string;
-  tier: 'bronze' | 'silver' | 'gold';
+  tier: 'participant' | 'bronze' | 'silver' | 'gold';
   /** 达成时该维度分（0–100）。 */
   score: number;
 }
