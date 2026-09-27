@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIMENSION_WEIGHTS, type Dimension, type Source } from '@a2t/core';
+import { DIMENSION_WEIGHTS, SOURCE_WEIGHTS, type Dimension, type Source } from '@a2t/core';
 import { computeScore, SCORE_MODEL_VERSION, type EvidencePoint } from '../src/index';
 
 const NOW = new Date('2026-08-23T12:00:00Z');
@@ -12,19 +12,19 @@ function ev(partial: Partial<EvidencePoint> & { dimension: Dimension }): Evidenc
 // 正确性 / 确定性 / 可解释性 / 可复现性 / 鲁棒性 / 数据完整性 / 性能
 
 describe('[正确性] Correctness', () => {
-  it('单条 success → 200（单维封顶 = 该维权重 × 1000）', () => {
-    expect(computeScore([ev({ dimension: 'capability', source: 'benchmark' })], NOW).score).toBe(200);
+  it('单条 success → 120（0.2×100×10 ×0.6 覆盖置信系数；v0.2 为 200）', () => {
+    expect(computeScore([ev({ dimension: 'capability', source: 'benchmark' })], NOW).score).toBe(120);
   });
 
   it('单条 failure → score 0', () => {
     expect(computeScore([ev({ dimension: 'capability', source: 'benchmark', result: 'failure' })], NOW).score).toBe(0);
   });
 
-  it('单条 partial → 100', () => {
-    expect(computeScore([ev({ dimension: 'capability', source: 'benchmark', result: 'partial' })], NOW).score).toBe(100);
+  it('单条 partial → 60（0.2×50×10 ×0.6；v0.2 为 100）', () => {
+    expect(computeScore([ev({ dimension: 'capability', source: 'benchmark', result: 'partial' })], NOW).score).toBe(60);
   });
 
-  it('跨维度混合：capability 成功 + reliability 失败 → 200（reliability 计 0）', () => {
+  it('跨维度混合：capability 成功 + reliability 失败 → 140（reliability 计 0）', () => {
     const r = computeScore(
       [
         ev({ dimension: 'capability', source: 'benchmark' }),
@@ -32,7 +32,8 @@ describe('[正确性] Correctness', () => {
       ],
       NOW,
     );
-    expect(r.score).toBe(200);
+    // v0.3 重算：weightedSum=0.2×100+0.2×0=20，cov=0.2+0.2=0.4 → round(20×10×(0.5+0.5×0.4))=round(140)=140
+    expect(r.score).toBe(140);
   });
 
   it('全 8 维满分 → 1000（绝对分上限）', () => {
@@ -42,12 +43,12 @@ describe('[正确性] Correctness', () => {
     expect(computeScore(all, NOW).score).toBe(1000);
   });
 
-  it('未测维度计 0：考场 4 维满分只是 500（不虚高）', () => {
+  it('未测维度计 0：考场 4 维满分 375（0.5 覆盖 → 置信系数 0.75，不虚高）', () => {
     const exam = (['capability', 'delivery', 'integrity', 'negotiation'] as Dimension[]).map((d) =>
       ev({ dimension: d, source: 'benchmark' }),
     );
-    // (0.2 + 0.15 + 0.1 + 0.05) × 100 × 10 = 500
-    expect(computeScore(exam, NOW).score).toBe(500);
+    // v0.3 重算：(0.2+0.15+0.1+0.05)×100×10 = 500；再 ×(0.5+0.5×0.5)=0.75 → round(375)=375
+    expect(computeScore(exam, NOW).score).toBe(375);
   });
 
   it('score 始终落在 [0, 1000]', () => {
@@ -134,8 +135,8 @@ describe('[来源权重] Source weighting', () => {
     expect(benchHigh.score!).toBeGreaterThan(selfHigh.score!);
   });
 
-  it('真实来源（real）单维满分 → 200（绝对分，单维封顶）', () => {
-    expect(computeScore([ev({ dimension: 'capability', source: 'real' })], NOW).score).toBe(200);
+  it('真实来源（real）单维满分 → 120（0.2×100×10 ×0.6 覆盖置信系数）', () => {
+    expect(computeScore([ev({ dimension: 'capability', source: 'real' })], NOW).score).toBe(120);
   });
 
   it('S5-T3/B3：real-confidential（confidential 明细类）在维度内按 0.5 计权', () => {
@@ -207,9 +208,9 @@ describe('[新鲜度] Freshness decay', () => {
       [ev({ dimension: 'capability', source: 'benchmark', timestamp: new Date('2026-06-24T12:00:00Z') })],
       NOW,
     );
-    // 60 天 = 2 个半衰期 → factor 0.25；score 200 → 50
-    expect(r.score).toBe(200);
-    expect(r.adjustedScore).toBe(50);
+    // 60 天 = 2 个半衰期 → factor 0.25；v0.3 重算：score = round(0.2×100×10×0.6) = 120 → adj = round(120×0.25) = 30
+    expect(r.score).toBe(120);
+    expect(r.adjustedScore).toBe(30);
   });
 
   it('无 timestamp → freshnessFactor = 1', () => {
@@ -228,14 +229,14 @@ describe('[鲁棒性] Robustness', () => {
   it('value 越界被 clamp 到 [0,1]', () => {
     const high = computeScore([ev({ dimension: 'capability', source: 'benchmark', value: 1.5 })], NOW);
     const low = computeScore([ev({ dimension: 'capability', source: 'benchmark', value: -0.5 })], NOW);
-    expect(high.score).toBe(200);
+    expect(high.score).toBe(120); // clamp 1 → 维分 100 → round(0.2×100×10×0.6)（v0.2 为 200）
     expect(low.score).toBe(0);
   });
 
   it('未知 source 回退默认权重，不抛异常', () => {
     const r = computeScore([ev({ dimension: 'capability', source: 'hacker' as Source })], NOW);
     expect(r.score).not.toBeNull();
-    expect(r.score).toBe(200);
+    expect(r.score).toBe(120); // 兜底 0.3 权重单条 → 维分仍 100 → round(0.2×100×10×0.6)（v0.2 为 200）
   });
 
   it('非法维度（运行时传入）被忽略，不崩', () => {
@@ -261,7 +262,7 @@ describe('[单调性] Monotonicity', () => {
 
 describe('[可复现性] Reproducibility', () => {
   it('modelVersion 固定且可追溯', () => {
-    expect(SCORE_MODEL_VERSION).toBe('baseline-v0.2');
+    expect(SCORE_MODEL_VERSION).toBe('baseline-v0.3');
     expect(computeScore([ev({ dimension: 'capability' })], NOW).modelVersion).toBe(SCORE_MODEL_VERSION);
   });
 });
@@ -275,5 +276,131 @@ describe('[性能] Performance', () => {
     const t0 = performance.now();
     computeScore(evidence, NOW);
     expect(performance.now() - t0).toBeLessThan(2000);
+  });
+});
+
+describe('reliability 重现性 blend（一期）', () => {
+  const now = new Date('2026-09-27T00:00:00Z');
+  const rel = (r: ReturnType<typeof computeScore>) =>
+    r.dimensions.find((d) => d.dimension === 'reliability')!;
+
+  it('有证据 + 有快照 → 各半 blend，consistency 字段随行', () => {
+    const r = computeScore(
+      [
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+      ],
+      now,
+      [
+        { score: 500, modelVersion: 'baseline-v0.3', snapshotAt: '2026-09-25T00:00:00Z' },
+        { score: 510, modelVersion: 'baseline-v0.3', snapshotAt: '2026-09-26T00:00:00Z' },
+      ],
+    );
+    // v0.3 重算：real-benchmark 证据封顶 → 维分 85；cons=86.67；blend = 0.5×85+0.5×86.67 = 85.835 → round2 = 85.84
+    expect(rel(r).score).toBe(85.84);
+    expect(rel(r).consistency).toBe(86.67);
+    expect(rel(r).evidenceCount).toBe(3);
+  });
+
+  it('无证据 + 稳定快照 → 一致性独撑，封顶 50', () => {
+    const r = computeScore([], now, [
+      { score: 500, modelVersion: 'v', snapshotAt: '2026-09-25T00:00:00Z' },
+      { score: 500, modelVersion: 'v', snapshotAt: '2026-09-26T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBe(50);
+    expect(rel(r).consistency).toBe(100);
+    expect(rel(r).evidenceCount).toBe(0);
+  });
+
+  it('无证据 + 剧烈漂移快照 → 一致性 0（min(0,50)=0）', () => {
+    const r = computeScore([], now, [
+      { score: 400, modelVersion: 'v', snapshotAt: '2026-09-25T00:00:00Z' },
+      { score: 600, modelVersion: 'v', snapshotAt: '2026-09-26T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBe(0);
+  });
+
+  it('只有跨版本快照 → reliability 保持 null（不激活）', () => {
+    const r = computeScore([], now, [
+      { score: 900, modelVersion: 'v0.1', snapshotAt: '2026-09-01T00:00:00Z' },
+      { score: 400, modelVersion: 'v0.2', snapshotAt: '2026-09-02T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBeNull();
+    expect(rel(r).consistency).toBeUndefined();
+  });
+
+  it('不传快照 → 第三参可选、向后兼容（v0.3：封顶 0.85 与覆盖置信系数照常生效）', () => {
+    const r = computeScore(
+      [{ dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now }],
+      now,
+    );
+    // v0.3 重算：real-benchmark value 1 → 维分 = min(1, 0.85)×100 = 85（公开题面封顶）；
+    // 总分 = round(0.2×85×10 × (0.5+0.5×0.2)) = round(170×0.6) = 102
+    expect(rel(r).score).toBe(85);
+    expect(r.score).toBe(102);
+  });
+
+  describe('v0.3 口径重标定', () => {
+    const now = new Date('2026-09-27T00:00:00Z');
+
+    it('real-benchmark 单题计分上限 0.85（背题刷不满）', () => {
+      const r = computeScore(
+        [{ dimension: 'capability', source: 'real-benchmark', value: 1, timestamp: now }],
+        now,
+      );
+      expect(r.dimensions.find((d) => d.dimension === 'capability')!.score).toBe(85);
+    });
+
+    it('上限不抬高低值证据（0.5 保持 0.5）', () => {
+      const r = computeScore(
+        [{ dimension: 'capability', source: 'real-benchmark', value: 0.5, timestamp: now }],
+        now,
+      );
+      expect(r.dimensions.find((d) => d.dimension === 'capability')!.score).toBe(50);
+    });
+
+    it('result 型 success 同样封顶（宣称满分也按 0.85 计）', () => {
+      const r = computeScore(
+        [{ dimension: 'integrity', source: 'real-benchmark', result: 'success', timestamp: now }],
+        now,
+      );
+      expect(r.dimensions.find((d) => d.dimension === 'integrity')!.score).toBe(85);
+    });
+
+    it('arena / real-confidential 不受公开题面封顶', () => {
+      const r = computeScore(
+        [{ dimension: 'delivery', source: 'arena', value: 1, timestamp: now }],
+        now,
+      );
+      expect(r.dimensions.find((d) => d.dimension === 'delivery')!.score).toBe(100);
+    });
+
+    it('SOURCE_WEIGHTS 补 arena=1.0（修复静默兜底 0.3）', () => {
+      expect(SOURCE_WEIGHTS['arena']).toBe(1.0);
+    });
+
+    it('覆盖置信系数：score = round(Σw×s×10 × (0.5+0.5×coverage))', () => {
+      // v0.3 重算：单维 capability real-benchmark value 1 → 维分 85（封顶），coverage=0.2
+      // score = round(0.2×85×10 × 0.6) = round(170×0.6) = 102
+      const r = computeScore(
+        [{ dimension: 'capability', source: 'real-benchmark', value: 1, timestamp: now }],
+        now,
+      );
+      expect(r.score).toBe(102);
+    });
+
+    it('8 维全覆盖时系数=1，满分语义不变', () => {
+      // 构造 8 维各 100 分（用非 real-benchmark 源避开封顶）
+      // weightedSum = Σw×100 = 100，cov=1 → 系数 1 → round(100×10×1) = 1000
+      const evidence = (
+        ['capability', 'reliability', 'delivery', 'economic', 'collaboration', 'security', 'negotiation', 'integrity'] as const
+      ).map((dimension) => ({ dimension, source: 'verified' as const, value: 1, timestamp: now }));
+      expect(computeScore(evidence, now).score).toBe(1000);
+    });
+
+    it('modelVersion = baseline-v0.3', () => {
+      expect(computeScore([], now).modelVersion).toBe('baseline-v0.3');
+    });
   });
 });

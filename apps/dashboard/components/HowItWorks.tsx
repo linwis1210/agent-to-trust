@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ArrowLeftRight, FileCheck2, Gauge, Network } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { Reveal } from './motion';
@@ -97,6 +98,12 @@ export function HowItWorks() {
             </div>
             <LoopScene3D step={step} cycle={cycle} />
           </div>
+        </Reveal>
+
+        <Reveal className="mt-8 flex justify-end">
+          <Link href="/methodology" className="text-xs text-dim transition-colors hover:text-ink">
+            {t.methodology.methodologyLink}
+          </Link>
         </Reveal>
       </div>
     </section>

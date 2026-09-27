@@ -36,11 +36,11 @@ describe('/playground', () => {
     await client?.end();
   });
 
-  it('GET /playground/templates → 3 个官方模板（含 name/desc/scenario）', async () => {
+  it('GET /playground/templates → 10 个官方模板（含 name/desc/scenario）', async () => {
     const res = await app.inject({ method: 'GET', url: '/playground/templates' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { templates: { id: string; name: string; desc: string; scenario: { strategy: { opening: number } } }[] };
-    expect(body.templates).toHaveLength(3);
+    expect(body.templates).toHaveLength(10);
     expect(body.templates[0].name).toBeTruthy();
     expect(body.templates[0].desc).toBeTruthy();
     expect(body.templates[0].scenario.strategy.opening).toBeGreaterThan(0);

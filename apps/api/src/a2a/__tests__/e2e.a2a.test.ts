@@ -235,9 +235,9 @@ describe('Task 10 — 免 SDK 端到端全链路（mock A2A server）', () => {
     expect(agentRow.pubkey, '登记时 pubkey 为空（开局才绑平台公钥）').toBeNull();
 
     // 代表「已过考场门槛」的真实证据（行为榜资格三件套之一；arena 证据由本局结算产出）。
-    // v0.2 绝对分口径：考场合计 4 维（capability/delivery/integrity/negotiation，权重和 0.5），
-    // 全 success ⇒ 绝对分 500（≥ 门槛 350）。旧口径「单维即 1000」的归一化缺陷已随 v0.2 修复，
-    // 故此处必须按真实考场维度播种，单维证据会得 150 分而被榜2 门槛挡下。
+    // v0.3 绝对分口径：考场合计 4 维（权重和 0.5），全 success ⇒ 每维封顶 0.85 → 维分 85，
+    // ws=42.5、cov=0.5 → 系数 0.75 ⇒ 绝对分 319（≥ 门槛 250）。按真实考场维度播种，
+    // 单维证据在 v0.3 覆盖置信系数下折半再折，会被榜2 门槛挡下。
     await db.insert(evidence).values(
       (['capability', 'delivery', 'integrity', 'negotiation'] as const).map((dimension) => ({
         id: `ev-${agentId}-bench-${dimension}`,
@@ -305,7 +305,7 @@ describe('Task 10 — 免 SDK 端到端全链路（mock A2A server）', () => {
     const mine = rows.find((r) => r.agentId === agentId);
     expect(mine, '本局 agent 应在行为榜聚合可见').toBeTruthy();
     expect(mine!.inArena).toBe(true);
-    expect(mine!.score ?? 0).toBeGreaterThanOrEqual(400);
+    expect(mine!.score ?? 0).toBeGreaterThanOrEqual(300); // v0.3：4 维全 success = 319
 
     // 能力榜（聚合主路由）同样能看到该 agent 且分数非空
     const capBoard = await app.inject({ method: 'GET', url: '/leaderboard' });

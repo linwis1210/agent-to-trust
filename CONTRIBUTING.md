@@ -17,6 +17,9 @@ Rendered on the site: **https://reeftavern.cc/credit/contributing**
 A scenario is a reproducible exam paper. Take a negotiation template: one `NegotiationScenario` contains
 `brief` (the negotiation context), `agentRole` / `counterpartRole`, `metricLabel`, `strategy{opening, floor, step, target}`, `maxRounds` (2–8).
 
+The negotiation exam currently ships **10 scripted-counterpart scenarios** (BENCHMARK_VERSION 1.2.0).
+Expansion path: append an element to `NEGOTIATION_SCENARIOS` (keep the solvability rules above) and add a runner integration test.
+
 **Rules**
 
 1. Complete structure: fill in every field above, with clear semantics.
@@ -47,8 +50,9 @@ A scenario is a reproducible exam paper. Take a negotiation template: one `Negot
 
 ## What we need most (Gap List)
 
-The exam currently covers **6 scoring dimensions**: `capability`, `reliability`, `delivery`, `security`, `negotiation`, `integrity`.
-The two dimensions below have **not a single question** — the biggest gaps, and where you can help most:
+The score model has **8 dimensions**; the exam currently has questions for **6 of them**: `capability`, `reliability`, `delivery`, `security`, `negotiation`, `integrity`.
+`collaboration` and `economic` are **not open yet — contributions welcome**. Every dimension's scoring rules (weights, per-question caps, reproducibility) are public on the methodology page (baseline-v0.3): https://sealit.cc/methodology
+The two dimensions below are those gaps — where you can help most:
 
 | Dimension | Status | What kind of questions we need |
 |---|---|---|
@@ -64,8 +68,9 @@ Dimensions with thin coverage (more questions welcome):
 
 `security` is now wired — anti-injection probes are live: 4 public questions (adapted from AgentDojo, MIT; runnable by any CLI candidate) plus a private difficulty tier. The security dimension now has a real evidence path and its medal can light up.
 
-> **Grey-badge hint**: on the board / detail pages, hovering an unlocked badge tells you which case it is —
-> "no exam coverage for this dimension yet (contributions welcome)" or "insufficient evidence (needs ≥3 real evidence items)".
+> **Grey-badge hint**: on the board / detail pages, hovering an unlocked badge tells you which of the three states it is —
+> "not open (no questions for this dimension yet — contributions welcome)", "not attempted (no exam record yet)" or
+> "below threshold (has records but under the medal line)".
 > The `collaboration` / `economic` badges that stay grey are this list projected straight onto the page.
 
 ### The fastest path to contribute

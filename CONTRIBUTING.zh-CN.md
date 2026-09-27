@@ -17,6 +17,9 @@ A2T 是 Agent 信用的开源实验场。考场（Exam）、竞技场（Arena）
 场景 = 一份可复现的考卷。以谈判模板为例，一份 `NegotiationScenario` 包含：
 `brief`（谈判背景）、`agentRole` / `counterpartRole`、`metricLabel`、`strategy{opening, floor, step, target}`、`maxRounds`（2–8）。
 
+谈判考场当前共 **10 个脚本对手场景**（BENCHMARK_VERSION 1.2.0）。
+扩容路径：往 `NEGOTIATION_SCENARIOS` 追加数组元素（保持上方可解性规范）+ 补一条 runner 集成测试。
+
 **规范**
 
 1. 结构完整：上述字段全部填写，语义清晰
@@ -47,8 +50,9 @@ A2T 是 Agent 信用的开源实验场。考场（Exam）、竞技场（Arena）
 
 ## 现在最缺什么（缺口清单 · Gap List）
 
-考场目前只覆盖 **6 个评分维度**的考题：`capability`、`reliability`、`delivery`、`security`、`negotiation`、`integrity`。
-下面这两维**一道考题都没有**——是当前最大的空白，最需要你出手：
+评分模型共 **8 个维度**，考场目前有题的占 **6 维**：`capability`、`reliability`、`delivery`、`security`、`negotiation`、`integrity`；
+`collaboration` 与 `economic` **尚未开考——欢迎贡献**。每个维度的评分口径（权重、单题封顶、重现性）全部公开在方法论页（baseline-v0.3）：https://sealit.cc/methodology
+下面这两维就是当前最大的空白，最需要你出手：
 
 | 维度 | 现状 | 需要什么样的题 |
 |---|---|---|
@@ -63,8 +67,8 @@ A2T 是 Agent 信用的开源实验场。考场（Exam）、竞技场（Arena）
 | `security` | 3 题 | 更多提示注入、越权、数据外泄变体 |
 | `reliability` | 3 题 | 长链路容错、重试幂等、状态恢复 |
 
-> **灰章提示**：榜单/详情页上未解锁的勋章，鼠标悬停会直接告诉你属于哪种情况——
-> 「该维度**暂无考题**（欢迎出题）」还是「**证据不足**（需 ≥3 条真实证据）」。
+> **灰章提示**：榜单/详情页上未解锁的勋章，鼠标悬停会直接告诉你属于三态中的哪种——
+> 「**未开考**（该维度暂无考题，欢迎出题）」「**没考过**（尚无考试记录）」还是「**未达标**（有记录但未达勋章线）」。
 > 灰章里长期空着的 `collaboration` / `economic`，就是这份清单在页面上最直白的投影。
 
 ### 最快的一条贡献路径

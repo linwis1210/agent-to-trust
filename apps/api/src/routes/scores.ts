@@ -50,6 +50,12 @@ export function serialize(s: typeof creditScores.$inferSelect) {
 
 export async function computeAndPersist(app: FastifyInstance, agentId: string) {
   const rows = await app.db.query.evidence.findMany({ where: eq(evidence.agentId, agentId) });
+  // 一期：历史快照（全版本）→ computeScore 做 reliability 重现性。
+  // 只取「已存在」的快照——本次计算的结果快照在后面才插入，天然不含自身。
+  const pastSnaps = await app.db.query.scoreSnapshots.findMany({
+    where: eq(scoreSnapshots.agentId, agentId),
+    orderBy: [scoreSnapshots.snapshotAt],
+  });
   const points: EvidencePoint[] = rows.map((e) => ({
     dimension: e.dimension as Dimension,
     source: e.source as Source,
@@ -58,7 +64,11 @@ export async function computeAndPersist(app: FastifyInstance, agentId: string) {
     value: e.value ?? undefined,
     timestamp: e.createdAt,
   }));
-  const result = computeScore(points);
+  const result = computeScore(
+    points,
+    new Date(),
+    pastSnaps.map((s) => ({ score: s.score, modelVersion: s.modelVersion, snapshotAt: s.snapshotAt })),
+  );
 
   const [created] = await app.db
     .insert(creditScores)
@@ -81,6 +91,7 @@ export async function computeAndPersist(app: FastifyInstance, agentId: string) {
     agentId,
     score: result.score,
     modelVersion: result.modelVersion,
+    dimensionsSnapshot: result.dimensions,
   });
 
   return created;

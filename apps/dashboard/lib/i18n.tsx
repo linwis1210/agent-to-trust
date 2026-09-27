@@ -177,14 +177,33 @@ export const zh = {
   medal: {
     title: '维度勋章',
     locked: '未解锁',
-    noExam: '该维度暂无考题支持 · 欢迎贡献考题',
-    notYet: '未解锁 · 真实证据不足（需 ≥3 条）',
+    noExam: '未开考 · 该维度暂无考题，欢迎贡献',
+    notTaken: '没考过 · 该维度尚无考试记录',
+    notYet: '未达标 · 有记录但未达勋章线（或真实证据不足 3 条）',
     tiers: {
       bronze: '入门级',
       silver: '工作级',
       gold: '专家级',
     },
-    legend: '勋章：每维最多一枚，只认真实证据（≥3 条）；未解锁显灰档，填充度分档（灰度可辨）。',
+    legend: '勋章：每维最多一枚，只认真实证据（≥3 条）。灰章三态：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。',
+  },
+
+  // ── methodology 页 ──
+  methodology: {
+    title: '方法论 · Methodology',
+    manifesto: 'Don\'t trust an Agent. Test it.',
+    manifestoNote: '我们不对 AI agent 许诺信任，我们给它出题。公开题库、确定性判分、签名证据链、append-only 档案——信用是被检验出来的，不是被宣称出来的。',
+    principlesTitle: '四条地基原则',
+    dimsTitle: '八个维度 · 评分细则与哲学锚点',
+    dimsFormula: '总分 = Σ（维度权重 × 维度分）× (0.5 + 0.5 × 覆盖度) × 10；公开考场单题计分上限 0.85；reliability = 证据分与快照重现性各半。权重为实验基线（baseline-v0.3），调整全程公开。',
+    cardExamines: '考察点',
+    cardSources: '题源',
+    cardScoring: '判分口径',
+    cardAntiGame: '防刷',
+    cardAnchor: '哲学锚点',
+    notOpenBadge: '未开考',
+    methodologyLink: '阅读完整方法论 →',
+    backHome: '← 返回榜单',
   },
 
   // ── AgentDetail ──
@@ -205,6 +224,7 @@ export const zh = {
     unverified: 'unverified（无证据，未评级）',
     dimensions: 'Dimensions · 维度分解',
     dimsNote: '只计入有证据的维度——“—” = 暂无证据，不虚高分。COVERAGE = 已覆盖维度的权重占比。',
+    methodologyLink: '口径与方法 →',
     noEvidenceDim: '暂无证据，不计入分数',
     evidenceChain: 'Evidence Chain · 证据链（{n}）',
     noEvidence: '暂无证据——证据即档案，档案即信用。',
@@ -801,15 +821,34 @@ export const en: Dict = {
   medal: {
     title: 'Dimension medals',
     locked: 'Locked',
-    noExam: 'No exam coverage for this dimension yet \u00b7 contributions welcome',
-    notYet: 'Locked \u00b7 not enough real evidence (needs \u22653)',
+    noExam: 'Exam not open \u00b7 no questions for this dimension yet, contributions welcome',
+    notTaken: 'Not attempted \u00b7 no exam record in this dimension yet',
+    notYet: 'Below threshold \u00b7 has records but under the medal line (or <3 real evidence)',
     tiers: {
       bronze: 'Entry',
       silver: 'Working',
       gold: 'Expert',
     },
     legend:
-      'Medals: one per dimension max, real evidence only (\u22653 items); locked slots shown grey; fill level marks the tier (reads in grayscale).',
+      'Medals: one per dimension max, real evidence only (\u22653). Grey states: not open (no exam yet) / not attempted (no record) / below threshold (recorded, under the line).',
+  },
+
+  // ── methodology page ──
+  methodology: {
+    title: 'Methodology',
+    manifesto: 'Don\'t trust an Agent. Test it.',
+    manifestoNote: 'We don\'t promise trust to AI agents — we examine them. Open question sets, deterministic grading, signed evidence chains, append-only records: credit is tested into existence, never claimed.',
+    principlesTitle: 'Four foundation principles',
+    dimsTitle: 'Eight dimensions · rules & philosophical anchors',
+    dimsFormula: 'score = Σ(weight × dimension score) × (0.5 + 0.5 × coverage) × 10; public-exam per-question cap 0.85; reliability = 50/50 evidence vs snapshot reproducibility. Weights are an experimental baseline (baseline-v0.3), adjusted in the open.',
+    cardExamines: 'Examines',
+    cardSources: 'Sources',
+    cardScoring: 'Scoring',
+    cardAntiGame: 'Anti-gaming',
+    cardAnchor: 'Philosophical anchor',
+    notOpenBadge: 'Exam not open',
+    methodologyLink: 'Read the full methodology →',
+    backHome: '← Back to the board',
   },
 
   detail: {
@@ -830,6 +869,7 @@ export const en: Dict = {
     dimensions: 'Dimensions \u00b7 Breakdown',
     dimsNote:
       'Only evidence-backed dimensions count \u2014 \u201c\u2014\u201d means no evidence yet, no inflated score. COVERAGE = weight share of covered dimensions.',
+    methodologyLink: 'Methodology →',
     noEvidenceDim: 'No evidence, not counted',
     evidenceChain: 'Evidence Chain ({n})',
     noEvidence: 'No evidence yet \u2014 evidence is the file, and the file is credit.',

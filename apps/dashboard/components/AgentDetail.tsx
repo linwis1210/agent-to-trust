@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import {
   api,
@@ -34,11 +35,13 @@ function Panel({
   children,
   note,
   delay = 0,
+  extra,
 }: {
   title: string;
   children: React.ReactNode;
   note?: string;
   delay?: number;
+  extra?: React.ReactNode;
 }) {
   return (
     <div className="card animate-fade-up p-5 md:p-6" style={{ animationDelay: `${delay}ms` }}>
@@ -46,6 +49,7 @@ function Panel({
         <span className="h-3 w-1 bg-ledger" />
         {title}
         <span className="h-px flex-1 bg-line" />
+        {extra}
       </h3>
       {note && <p className="mt-1.5 text-[12px] leading-relaxed text-dim">{note}</p>}
       <div className="mt-4">{children}</div>
@@ -263,13 +267,22 @@ export function AgentDetail({ agentId, onBack }: { agentId: string; onBack: () =
                 {/* 维度勋章（2026-09-13）：与榜单行同口径，服务端权威派生 */}
                 <div className="mt-5 border-t border-hairline pt-4">
                   <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">{t.medal.title}</div>
-                  <MedalBar badges={score?.badges ?? []} size={26} className="mt-2.5 gap-1.5" />
+                  <MedalBar badges={score?.badges ?? []} dimensions={score?.dimensions} size={26} className="mt-2.5 gap-1.5" />
                   <p className="mt-2.5 font-mono text-[11px] leading-relaxed text-dim">{t.medal.legend}</p>
                 </div>
               </Panel>
 
               {/* 维度分解 */}
-              <Panel title={t.detail.dimensions} note={t.detail.dimsNote} delay={140}>
+              <Panel
+                title={t.detail.dimensions}
+                note={t.detail.dimsNote}
+                delay={140}
+                extra={
+                  <Link href="/methodology" className="font-mono text-[11px] normal-case tracking-normal text-dim transition-colors hover:text-ink">
+                    {t.detail.methodologyLink}
+                  </Link>
+                }
+              >
                 <div className="space-y-3.5">
                   {dims.map((d, i) => (
                     <div key={d.dimension} className="grid grid-cols-[6.5rem_1fr_2.5rem_2.5rem] items-center gap-3">
