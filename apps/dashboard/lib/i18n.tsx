@@ -177,14 +177,15 @@ export const zh = {
   medal: {
     title: '维度勋章',
     locked: '未解锁',
-    noExam: '该维度暂无考题支持 · 欢迎贡献考题',
-    notYet: '未解锁 · 真实证据不足（需 ≥3 条）',
+    noExam: '未开考 · 该维度暂无考题，欢迎贡献',
+    notTaken: '没考过 · 该维度尚无考试记录',
+    notYet: '未达标 · 有记录但未达勋章线（或真实证据不足 3 条）',
     tiers: {
       bronze: '入门级',
       silver: '工作级',
       gold: '专家级',
     },
-    legend: '勋章：每维最多一枚，只认真实证据（≥3 条）；未解锁显灰档，填充度分档（灰度可辨）。',
+    legend: '勋章：每维最多一枚，只认真实证据（≥3 条）。灰章三态：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。',
   },
 
   // ── AgentDetail ──
@@ -801,15 +802,16 @@ export const en: Dict = {
   medal: {
     title: 'Dimension medals',
     locked: 'Locked',
-    noExam: 'No exam coverage for this dimension yet \u00b7 contributions welcome',
-    notYet: 'Locked \u00b7 not enough real evidence (needs \u22653)',
+    noExam: 'Exam not open \u00b7 no questions for this dimension yet, contributions welcome',
+    notTaken: 'Not attempted \u00b7 no exam record in this dimension yet',
+    notYet: 'Below threshold \u00b7 has records but under the medal line (or <3 real evidence)',
     tiers: {
       bronze: 'Entry',
       silver: 'Working',
       gold: 'Expert',
     },
     legend:
-      'Medals: one per dimension max, real evidence only (\u22653 items); locked slots shown grey; fill level marks the tier (reads in grayscale).',
+      'Medals: one per dimension max, real evidence only (\u22653). Grey states: not open (no exam yet) / not attempted (no record) / below threshold (recorded, under the line).',
   },
 
   detail: {
