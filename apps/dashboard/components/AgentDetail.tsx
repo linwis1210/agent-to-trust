@@ -167,6 +167,15 @@ export function AgentDetail({ agentId, onBack }: { agentId: string; onBack: () =
         )
       ) : (
         <>
+          {/* 一期触达：老考生（无 1.2.0 探针维度证据）→ 升级横幅 */}
+          {evidence.length > 0 && !evidence.some((e) => e.dimension === 'security') && (
+            <div className="mb-6 rounded-lg border border-brass/40 border-l-[5px] border-l-brass bg-brass/[0.05] px-5 py-4">
+              <p className="font-display text-sm font-bold text-brass">{t.detail.examUpgradedTitle}</p>
+              <p className="mt-1 text-sm leading-relaxed text-dim">{t.detail.examUpgradedBody}</p>
+              <code className="mt-2 block rounded-md border border-line bg-night px-3 py-2 font-mono text-xs text-ledger">npm i -g agent-to-trust@0.3.0</code>
+            </div>
+          )}
+
           {/* 卷宗头部：名字 + 大印章 */}
           <div className="relative animate-fade-up overflow-hidden rounded-lg border border-line-strong bg-surface shadow-lift">
             <div aria-hidden className="bg-tech-grid mask-fade-b pointer-events-none absolute inset-0" />

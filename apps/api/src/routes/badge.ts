@@ -4,9 +4,9 @@
  * 一行嵌入：[![A2T](https://reeftavern.cc/credit/api/badge/<agentId>.svg)](报告页 URL)
  * 动态生成：分数 + verified 徽标；60s 缓存。
  */
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { agents, creditScores } from '../db/schema';
+import { agents, creditScores, evidence } from '../db/schema';
 import { createRateLimiter } from '../services/rateLimit';
 
 function esc(s: string): string {
@@ -47,8 +47,15 @@ export async function badgeRoutes(app: FastifyInstance) {
       orderBy: [desc(creditScores.createdAt)],
     });
     const verified = agent.verificationLevel === 'verified';
+    // 触达钩子：贴出去的 badge 自带考试版本态——老考生（无 1.2.0 探针维度证据）显示 retake 引导重考。
+    const hasV12 = await app.db.query.evidence.findFirst({
+      where: and(eq(evidence.agentId, agent.id), eq(evidence.dimension, 'security')),
+    });
+    const examTag = hasV12 ? 'v1.2.0' : 'retake';
     const value =
-      score?.score != null ? `score ${score.score}${verified ? ' · verified' : ''}` : 'untested';
+      score?.score != null
+        ? `score ${score.score} · ${examTag}${verified ? ' · verified' : ''}`
+        : 'untested';
     reply.type('image/svg+xml').header('cache-control', 'public, max-age=60');
     return badgeSvg('A2T', value, verified ? '#f59e0b' : '#94a3b8');
   }
