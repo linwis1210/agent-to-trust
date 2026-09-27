@@ -277,3 +277,64 @@ describe('[性能] Performance', () => {
     expect(performance.now() - t0).toBeLessThan(2000);
   });
 });
+
+describe('reliability 重现性 blend（一期）', () => {
+  const now = new Date('2026-09-27T00:00:00Z');
+  const rel = (r: ReturnType<typeof computeScore>) =>
+    r.dimensions.find((d) => d.dimension === 'reliability')!;
+
+  it('有证据 + 有快照 → 各半 blend，consistency 字段随行', () => {
+    const r = computeScore(
+      [
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+        { dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now },
+      ],
+      now,
+      [
+        { score: 500, modelVersion: 'baseline-v0.3', snapshotAt: '2026-09-25T00:00:00Z' },
+        { score: 510, modelVersion: 'baseline-v0.3', snapshotAt: '2026-09-26T00:00:00Z' },
+      ],
+    );
+    // cons=86.67；blend=0.5×100+0.5×86.67=93.33（任务 10 公开题面封顶后改为 85.84，见该任务）
+    expect(rel(r).score).toBe(93.34);
+    expect(rel(r).consistency).toBe(86.67);
+    expect(rel(r).evidenceCount).toBe(3);
+  });
+
+  it('无证据 + 稳定快照 → 一致性独撑，封顶 50', () => {
+    const r = computeScore([], now, [
+      { score: 500, modelVersion: 'v', snapshotAt: '2026-09-25T00:00:00Z' },
+      { score: 500, modelVersion: 'v', snapshotAt: '2026-09-26T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBe(50);
+    expect(rel(r).consistency).toBe(100);
+    expect(rel(r).evidenceCount).toBe(0);
+  });
+
+  it('无证据 + 剧烈漂移快照 → 一致性 0（min(0,50)=0）', () => {
+    const r = computeScore([], now, [
+      { score: 400, modelVersion: 'v', snapshotAt: '2026-09-25T00:00:00Z' },
+      { score: 600, modelVersion: 'v', snapshotAt: '2026-09-26T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBe(0);
+  });
+
+  it('只有跨版本快照 → reliability 保持 null（不激活）', () => {
+    const r = computeScore([], now, [
+      { score: 900, modelVersion: 'v0.1', snapshotAt: '2026-09-01T00:00:00Z' },
+      { score: 400, modelVersion: 'v0.2', snapshotAt: '2026-09-02T00:00:00Z' },
+    ]);
+    expect(rel(r).score).toBeNull();
+    expect(rel(r).consistency).toBeUndefined();
+  });
+
+  it('不传快照 → 与旧口径完全一致（向后兼容）', () => {
+    const r = computeScore(
+      [{ dimension: 'reliability', source: 'real-benchmark', value: 1, timestamp: now }],
+      now,
+    );
+    expect(rel(r).score).toBe(100);
+    expect(r.score).toBe(Math.round(0.2 * 100 * 10)); // 200，v0.2 公式原样
+  });
+});

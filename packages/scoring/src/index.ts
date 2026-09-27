@@ -14,6 +14,7 @@ import {
   type EvidenceResult,
   type Source,
 } from '@a2t/core';
+import { snapshotConsistency, type SnapshotPoint } from './consistency.js';
 
 export const SCORE_MODEL_VERSION = 'baseline-v0.2';
 
@@ -27,6 +28,8 @@ const RESULT_VALUE: Record<EvidenceResult, number> = {
 const COUNT_FULL = 20;
 /** 新鲜度半衰期（天）。 */
 const FRESHNESS_HALF_LIFE_DAYS = 30.0;
+/** 一期：reliability 一致性「独撑」时的封顶——纯被动快照不享全权重（别让分数太高）。 */
+export const RELIABILITY_CONSISTENCY_CAP = 50;
 
 export interface EvidencePoint {
   dimension: Dimension;
@@ -42,6 +45,8 @@ export interface DimensionResult {
   score: number | null; // 0..100，无证据为 null
   weight: number;
   evidenceCount: number;
+  /** v0.3 起：reliability 条目附快照一致性分（0..100）。裸 jsonb 旧行无此键，读侧必须容忍。 */
+  consistency?: number;
 }
 
 export interface ExplanationItem {
@@ -109,9 +114,26 @@ function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
 
-export function computeScore(evidence: EvidencePoint[], now: Date = new Date()): ScoreResult {
+export function computeScore(
+  evidence: EvidencePoint[],
+  now: Date = new Date(),
+  snapshots?: readonly SnapshotPoint[], // 一期新增：可选，向后兼容
+): ScoreResult {
+  const cons = snapshots ? snapshotConsistency(snapshots) : null;
   const dimensions: DimensionResult[] = (Object.keys(DIMENSION_WEIGHTS) as Dimension[]).map((dim) => {
     const { score, count } = dimensionScore(evidence, dim);
+    if (dim === 'reliability' && cons !== null) {
+      // 一期激活口径：证据分与总分重现性各半；一致性独撑时封顶 50。
+      const blended =
+        score !== null ? round2(0.5 * score + 0.5 * cons) : Math.min(cons, RELIABILITY_CONSISTENCY_CAP);
+      return {
+        dimension: dim,
+        score: blended,
+        weight: DIMENSION_WEIGHTS[dim],
+        evidenceCount: count,
+        consistency: cons,
+      };
+    }
     return { dimension: dim, score, weight: DIMENSION_WEIGHTS[dim], evidenceCount: count };
   });
 
