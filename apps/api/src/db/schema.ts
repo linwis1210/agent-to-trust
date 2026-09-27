@@ -77,6 +77,8 @@ export const evidence = pgTable(
     evidenceUri: text('evidence_uri'),
     payloadHash: text('payload_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** 重考收口（2026-09-27）：被新卷取代/作废的证据打退役时间戳。append-only：只标记不删除。 */
+    retiredAt: timestamp('retired_at', { withTimezone: true }),
   },
   (t) => [index('idx_evidence_agent_id').on(t.agentId)],
 );

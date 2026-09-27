@@ -5,6 +5,7 @@ import { type Dimension, type Source } from '@a2t/core';
 import {
   badgesFromDimensions,
   computeScore,
+  dedupeByUriLatest,
   realEvidenceCounts,
   REAL_EVIDENCE_SOURCES,
   type Badge,
@@ -28,9 +29,12 @@ async function badgesForAgent(
       inArray(evidence.source, [...REAL_EVIDENCE_SOURCES]),
     ),
   });
+  // 重考收口（2026-09-27）：勋章计数与算分同口径——退役证据不计、同题只算最新一条，
+  // 否则重考号证据量翻倍会虚亮勋章（例：20 题算成 40 条）。
+  const activeRows = dedupeByUriLatest(rows.filter((r) => r.retiredAt == null));
   const dims = (s.dimensions ?? []) as Array<{ dimension: string; score: number | null; consistency?: number | null }>;
   // consistency（reliability 重现性）由 badgesFromDimensions 识别为「一致性达标证据」。
-  return badgesFromDimensions(dims, realEvidenceCounts(rows), s.freshnessDays);
+  return badgesFromDimensions(dims, realEvidenceCounts(activeRows), s.freshnessDays);
 }
 
 export function serialize(s: typeof creditScores.$inferSelect) {
@@ -51,13 +55,18 @@ export function serialize(s: typeof creditScores.$inferSelect) {
 
 export async function computeAndPersist(app: FastifyInstance, agentId: string) {
   const rows = await app.db.query.evidence.findMany({ where: eq(evidence.agentId, agentId) });
+  // 重考收口（2026-09-27）：同一题（evidenceUri）只取最新一条——重考自动替换旧卷，
+  // 消除「旧卷 + 新卷」双重计量（覆盖率取并集、证据量翻倍的虚高源）。
+  // 原始证据全留库可审（append-only 红线）；已行退役标记（retiredAt）的证据不计分。
+  const active = rows.filter((r) => r.retiredAt == null);
+  const deduped = dedupeByUriLatest(active);
   // 一期：历史快照（全版本）→ computeScore 做 reliability 重现性。
   // 只取「已存在」的快照——本次计算的结果快照在后面才插入，天然不含自身。
   const pastSnaps = await app.db.query.scoreSnapshots.findMany({
     where: eq(scoreSnapshots.agentId, agentId),
     orderBy: [scoreSnapshots.snapshotAt],
   });
-  const points: EvidencePoint[] = rows.map((e) => ({
+  const points: EvidencePoint[] = deduped.map((e) => ({
     dimension: e.dimension as Dimension,
     source: e.source as Source,
     sourceType: e.sourceType,
@@ -83,7 +92,7 @@ export async function computeAndPersist(app: FastifyInstance, agentId: string) {
       freshnessDays: result.freshnessDays,
       modelVersion: result.modelVersion,
       dimensions: result.dimensions as unknown as Record<string, unknown>[],
-      evidenceRefs: rows.map((r) => r.id),
+      evidenceRefs: deduped.map((r) => r.id),
     })
     .returning();
 

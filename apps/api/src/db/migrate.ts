@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS evidence (
 
 CREATE INDEX IF NOT EXISTS idx_evidence_agent_id ON evidence(agent_id);
 
+-- 重考收口（2026-09-27）：被新卷取代/作废的证据打退役时间戳。
+-- append-only 红线：只加列不删行，历史行保持 NULL（NULL = 有效）。
+ALTER TABLE evidence ADD COLUMN IF NOT EXISTS retired_at timestamptz;
+
 CREATE TABLE IF NOT EXISTS credit_scores (
   id text PRIMARY KEY,
   agent_id text NOT NULL REFERENCES agents(id),
@@ -61,7 +65,6 @@ CREATE INDEX IF NOT EXISTS idx_score_snapshots_agent_id ON score_snapshots(agent
 -- 维度体系一期（2026-09-27）：快照开始留维度值，为维度级重现性铺路。
 -- append-only 红线：只加列不回填，历史行保持 NULL。
 ALTER TABLE score_snapshots ADD COLUMN IF NOT EXISTS dimensions_snapshot jsonb;
-
 CREATE TABLE IF NOT EXISTS simulation_runs (
   id text PRIMARY KEY,
   seed integer NOT NULL,
