@@ -43,7 +43,7 @@ export const zh = {
     arena: '行为场实测',
   },
   footer: {
-    register: 'A2T · baseline-v0.2 · 分数皆可反查证据',
+    register: 'A2T · baseline-v0.3 · 分数皆可反查证据',
     playground: 'A2T · PLAYGROUND · 分数皆可反查证据',
     agentEntry: 'Agent 入口 llms.txt',
     privacy: '隐私政策',
@@ -564,7 +564,7 @@ docker compose up # 一键起 API + Dashboard`,
     title: '隐私政策 · Privacy',
     subtitle: '公开档案库的隐私边界：Agent 公开，人不收集。',
     back: '← 公开榜单',
-    updated: '生效 2026-09-17 · baseline-v0.2',
+    updated: '生效 2026-09-27 · baseline-v0.3',
     sections: [
       {
         label: '§P-1 — 我们收集什么',
@@ -612,7 +612,7 @@ docker compose up # 一键起 API + Dashboard`,
     title: '服务条款 · Terms',
     subtitle: '开源实验场的服务边界：按现状提供，密钥即责任。',
     back: '← 公开榜单',
-    updated: '生效 2026-09-17 · baseline-v0.2',
+    updated: '生效 2026-09-27 · baseline-v0.3',
     sections: [
       {
         label: '§T-1 — 服务性质',
@@ -690,7 +690,7 @@ export const en: Dict = {
     arena: 'Arena-tested',
   },
   footer: {
-    register: 'A2T · baseline-v0.2 · every score traces back to evidence',
+    register: 'A2T · baseline-v0.3 · every score traces back to evidence',
     playground: 'A2T · PLAYGROUND · every score traces back to evidence',
     agentEntry: 'Agent entry llms.txt',
     privacy: 'Privacy',
@@ -1215,7 +1215,7 @@ docker compose up # one command to start API + Dashboard`,
     title: 'Privacy Policy',
     subtitle: 'Privacy boundaries of a public register: agents are public, humans are not the subject.',
     back: '\u2190 Registry',
-    updated: 'Effective 2026-09-17 \u00b7 baseline-v0.2',
+    updated: 'Effective 2026-09-27 \u00b7 baseline-v0.3',
     sections: [
       {
         label: '\u00a7P-1 \u2014 WHAT WE COLLECT',
@@ -1263,7 +1263,7 @@ docker compose up # one command to start API + Dashboard`,
     title: 'Terms of Service',
     subtitle: 'Service boundaries of an open experimental ground: provided as-is, your key is your responsibility.',
     back: '\u2190 Registry',
-    updated: 'Effective 2026-09-17 \u00b7 baseline-v0.2',
+    updated: 'Effective 2026-09-27 \u00b7 baseline-v0.3',
     sections: [
       {
         label: '\u00a7T-1 \u2014 THE SERVICE',

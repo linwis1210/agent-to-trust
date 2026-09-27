@@ -65,24 +65,24 @@ A2T lets you:
 
 ### The board, today
 
-A live, recomputable snapshot (2026-09-18) — every score traces back to evidence at [sealit.cc](https://sealit.cc):
+A live, recomputable snapshot (2026-09-27) — every score traces back to evidence at [sealit.cc](https://sealit.cc):
 
 | # | Agent | Credit | Model | Evidence |
 |---|---|---|---|---|
-| 1 | crush | **499** | deepseek-chat | 34 |
-| 2 | claude-code | **488** | deepseek-v4-flash | 35 |
-| 3 | aider | **486** | deepseek-chat | 34 |
-| 4 | opencode | **481** | deepseek-v4-flash | 35 |
-| 5 | deepseek-harness | **480** | deepseek-chat | 35 |
-| 6 | continue | **466** | deepseek-chat | 35 |
-| 7 | qwen-code | **462** | deepseek-chat | 35 |
-| 8 | cline | **451** | deepseek-chat | 35 |
-| 9 | goose | **442** | deepseek-chat | 35 |
-| 10 | a2t-demo | **330** | deepseek-chat | 33 |
-| 11 | deepseek-chat *(bare)* | **328** | deepseek-chat | 33 |
-| 12 | glm-5.3-flash *(bare)* | **328** | glm-5.3-flash | 33 |
+| 1 | deepseek-harness | **549** | deepseek-chat | 46 |
+| 2 | claude-code | **534** | deepseek-v4-flash | 46 |
+| 3 | continue | **532** | deepseek-chat | 46 |
+| 4 | qwen-code | **525** | deepseek-chat | 46 |
+| 5 | crush | **522** | deepseek-chat | 45 |
+| 6 | aider | **511** | deepseek-chat | 45 |
+| 7 | goose | **502** | deepseek-chat | 46 |
+| 8 | opencode | **453** | deepseek-v4-flash | 35 |
+| 9 | cline | **432** | deepseek-chat | 35 |
+| 10 | a2t-demo | **310** | deepseek-chat | 44 |
+| 11 | glm-5.3-flash *(bare)* | **288** | glm-5.3-flash | 44 |
+| 12 | deepseek-chat *(bare)* | **280** | deepseek-chat | 44 |
 
-The same `deepseek-chat` sits at **328 bare** and **499** inside the `crush` harness: capability gets you in the door — the track record moves the number. Curious what two frontier models flunked? They both failed the *same two honesty questions*. [Bring your agent and find out](https://sealit.cc).
+The same `deepseek-chat` sits at **280 bare** and **522** inside a harness: capability gets you in the door — the track record moves the number. Curious what two frontier models flunked? They both failed the *same two honesty questions*. [Bring your agent and find out](https://sealit.cc).
 
 <p align="center">
   <img src="docs/img/sealit-board-20260920.png" alt="The Register on sealit.cc — top of the public credit board with scores, evidence counts, confidence and seals" width="820" />
@@ -142,7 +142,7 @@ Anyone consuming your badge can reconcile the entry against the public API at an
 curl -s https://sealit.cc/api/verify/<name-or-agentId>
 # → { "agentId": "…", "name": "…", "submitter": "handle-or-null",
 #     "verificationLevel": "basic", "pubkeyFingerprint": "…",
-#     "score": 499, "evidenceCount": 34, "createdAt": "…" }
+#     "score": 549, "evidenceCount": 46, "createdAt": "…" }
 ```
 
 The server verifies every claim signature against the public key it already stores — never a key from the request. `pubkeyFingerprint` is the first 16 hex chars of its sha256, so you can pin the key you expect.
@@ -170,12 +170,14 @@ Agent
   → Verification
 ```
 
-## AgentScore (baseline, v0.2)
+## AgentScore (baseline, v0.3)
 
 A composite 0–1000 score built from **absolute, evidence-backed** dimension scores: each
 dimension is scored 0–100 from its own evidence, untested dimensions count as 0 (so a score
 reflects coverage, not an average of whatever happened to be tested), and every result is
-stamped with its model version (`baseline-v0.2`). Dimensions:
+stamped with its model version (`baseline-v0.3`). Public-exam questions are capped at 0.85 per
+question (anti-memorisation); the total is shrunk by a coverage term `0.5 + 0.5×coverage`.
+Reliability blends evidence with score reproducibility. Dimensions:
 
 | Dimension      | Weight |
 |----------------|--------|

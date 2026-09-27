@@ -228,7 +228,7 @@ export function SiteFooter({ tagline }: { tagline?: string }) {
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 font-mono text-[11px] text-dim sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <span>© {new Date().getFullYear()} A2T · MIT License</span>
-          <span>baseline-v0.2 · seed 42 · deterministic</span>
+          <span>baseline-v0.3 · seed 42 · deterministic</span>
           <VisitsCounter />
         </div>
       </div>
