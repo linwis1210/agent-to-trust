@@ -2,6 +2,17 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/) 约定，版本遵循语义化版本。
 
+## 2026-09-27 · 维度体系一期（baseline-v0.3 / BENCHMARK 1.2.0）
+
+- **评分口径 v0.3**：公开考场单题计分上限 0.85（防背题）；总分乘覆盖置信系数 (0.5+0.5×coverage)；
+  reliability 激活「总分重现性」（同口径相邻快照漂移，一致性独撑封顶 50，跨口径跳变不计）。
+  全量重算（17/17 成功，全员回落）：榜一 crush 499 → 465，deepseek-chat 328 → 189，v1 旧卷虚高洗掉。
+- **谈判考场扩容**：3 → 10 个脚本对手场景（BENCHMARK_VERSION 1.2.0）；老客户端不受影响，重跑考试即吃新卷。
+- **诚信第四通道**：言行一致检查——宣称的 endpoint 在服务端复算下能否复现宣称成绩，不符落 integrity failure 证据。
+- **勋章灰章三态**：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。
+- **新页 /methodology**：Manifesto + 四条地基原则 + 8 维度卡（考察点/题源/判分口径/防刷/哲学锚点）。
+- score_snapshots 开始留维度快照（dimensions_snapshot），为维度级重现性铺路（append-only，不回填）。
+
 ## [Unreleased]
 
 ### Added — Jev judge cross-check（蹭 Jev 热度实验）

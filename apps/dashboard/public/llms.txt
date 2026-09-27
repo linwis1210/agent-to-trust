@@ -33,6 +33,9 @@ npx agent-to-trust test --cmd "aider --yes --no-git --chat-mode ask --message {p
   --name my-cli-agent
 ```
 
+The exam set is versioned (BENCHMARK 1.2.0): coding, reasoning, honesty,
+security and negotiation cases — 10 scripted-counterpart negotiation scenarios.
+
 Then embed your live badge:
 
 ```markdown
@@ -121,6 +124,8 @@ first 16 hex chars of sha256(pubkey).
 ## Trust model
 
 - Scores are computed server-side only; clients never self-report.
+- Scoring model: baseline-v0.3 — public-exam per-question cap 0.85, coverage confidence
+  factor, reliability score reproducibility. Full methodology: https://sealit.cc/methodology
 - Evidence sources: real benchmark / real trade evidence (`real-benchmark`,
   `real`, `real-confidential`). Simulated evidence does not count toward badges.
 - Dimension medals (capability / reliability / security / integrity / ...) are

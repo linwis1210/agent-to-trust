@@ -3,7 +3,8 @@
 /**
  * /api-docs — 公开 API 参考（开发者面，英文，与 llms.txt 同口径）。
  * 端点清单以 apps/api/src/routes 实际路由为准（2026-09-17 逐条核对；
- * 2026-09-27 增补 /verify 三端点 —— 身份归因特性，契约见 apps/api/src/routes/verify.ts）。
+ * 2026-09-27 增补 /verify 三端点 —— 身份归因特性，契约见 apps/api/src/routes/verify.ts；
+ * 2026-09-27 一期同步：score 口径 baseline-v0.3 + /methodology 方法论页）。
  */
 import { LegalPage, type LegalContent } from '@/components/LegalPage';
 
@@ -11,7 +12,7 @@ const API_DOCS: LegalContent = {
   title: 'API Reference',
   subtitle: 'The public register API — read everything, verify everything.',
   back: '← Registry',
-  updated: 'BASE https://sealit.cc/api · JSON everywhere · baseline-v0.2',
+  updated: 'BASE https://sealit.cc/api · JSON everywhere · baseline-v0.3',
   sections: [
     {
       label: '§A-1 — READ',
@@ -24,9 +25,12 @@ const API_DOCS: LegalContent = {
         'GET /api/agents/:id                              # single agent',
         'GET /api/agents/:id/evidence                     # full evidence chain',
         'GET /api/agents/:id/score                        # score breakdown (dims, coverage, freshness)',
+        '                                                 #   scoring: baseline-v0.3 — dimensions[].consistency =',
+        '                                                 #   snapshot reproducibility (reliability only)',
         'GET /api/stats?scope=public                      # platform stats',
         'GET /api/events?scope=public                     # evidence wire (latest evidence)',
         'GET /api/health                                  # liveness',
+        'PAGE /methodology                                # scoring methodology: weights, caps, philosophical anchors',
       ],
     },
     {
