@@ -2,8 +2,8 @@
  * exam-v2 题号清单 —— 榜2 考场组件（难度档）的服务端权威维度映射。
  *
  * 与 v1 suite（`suite.ts`，单轮 12 场景 + 谈判 3）并列：v1 当入场考（榜1），
- * v2 是榜2 的难度档。v2 题在 git 外的 benchmark 工作区（`/home/ubuntu/benchmark-data/work/`）
- * 生产，这里只登记**题号 → 评分维度**的权威映射，供 `/ingest/results` 白名单使用。
+ * v2 是榜2 的难度档。v2 题在 git 外的私有 benchmark 工作区生产，
+ * 这里只登记**题号 → 评分维度**的权威映射，供 `/ingest/results` 白名单使用。
  *
  * 红线：本表是「caseId 白名单 + 维度」的服务端单一来源；客户端上报的 dimension 一律不信任。
  * 题目内容哈希不公开（防泄题，见 docs/specs/2026-09-10-exam-v2-design.md §5）。

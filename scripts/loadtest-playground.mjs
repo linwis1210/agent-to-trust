@@ -10,14 +10,14 @@
  *
  * 用法：node scripts/loadtest-playground.mjs \
  *         --base http://127.0.0.1/credit/api \
- *         --endpoint http://43.128.85.77:18443/v1/chat/completions
+ *         --endpoint http://127.0.0.1:18443/v1/chat/completions
  */
 import { execSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 const get = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const BASE = get('--base', 'http://127.0.0.1/credit/api');
-const ENDPOINT = get('--endpoint', 'http://43.128.85.77:18443/v1/chat/completions');
+const ENDPOINT = get('--endpoint', 'http://127.0.0.1:18443/v1/chat/completions');
 const HOST = get('--host', 'reeftavern.cc');
 const CONTAINER = get('--container', 'agent-credit-lab-api-1');
 
