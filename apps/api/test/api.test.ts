@@ -42,12 +42,19 @@ describe('[正确性] Correctness', () => {
     expect(get.json().name).toBe('test-agent');
   });
 
-  it('全失败证据 → score 0', async () => {
+  it('全失败证据 → 证据本身贡献 0 分（reliability 含重现性加成，一期新口径）', async () => {
     const agent = (await createAgent('fail-agent')).json();
     await app.inject({ method: 'POST', url: `/agents/${agent.id}/evidence`, payload: { dimension: 'reliability', source: 'simulation', result: 'failure' } });
     await app.inject({ method: 'POST', url: `/agents/${agent.id}/evidence`, payload: { dimension: 'reliability', source: 'simulation', result: 'failure' } });
     const res = await app.inject({ method: 'POST', url: `/agents/${agent.id}/score` });
-    expect(res.json().score).toBe(0);
+    // 2026-09-27 一期 reliability 激活后期望值手工重算（plan 任务 3 Step 4）：
+    // 两次 POST /evidence 内部各触发一次重算并留一条 score=0 快照（evidence.ts:72）→
+    // 第 3 次计算取到同版本相邻零漂移历史 [0,0] → cons=100 →
+    // reliability = round2(0.5×0（全失败证据分）+ 0.5×100) = 50 → 总分 = round(0.2×50×10) = 100。
+    // 失败证据本身仍贡献 0 分，加成来自快照重现性（不是失败证据得分）。
+    expect(res.json().score).toBe(100);
+    const rel = res.json().dimensions.find((d: { dimension: string }) => d.dimension === 'reliability');
+    expect(rel.evidenceCount).toBe(2); // 失败证据计入计数（证据分 0）
   });
 });
 

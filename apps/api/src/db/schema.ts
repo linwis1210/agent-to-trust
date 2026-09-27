@@ -7,6 +7,7 @@
 
 import { boolean, index, integer, jsonb, pgTable, real, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import type { DimensionResult } from '@a2t/scoring';
 
 export const agents = pgTable('agents', {
   id: text('id').primaryKey(),
@@ -109,6 +110,8 @@ export const scoreSnapshots = pgTable(
       .references(() => agents.id),
     score: integer('score'),
     modelVersion: text('model_version').notNull(),
+    /** 一期加列（不回填）：快照时点的 8 维明细。历史行为 NULL，读侧必须容忍。 */
+    dimensionsSnapshot: jsonb('dimensions_snapshot').$type<DimensionResult[]>(),
     snapshotAt: timestamp('snapshot_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('idx_score_snapshots_agent_id').on(t.agentId)],

@@ -58,6 +58,10 @@ CREATE TABLE IF NOT EXISTS score_snapshots (
 
 CREATE INDEX IF NOT EXISTS idx_score_snapshots_agent_id ON score_snapshots(agent_id);
 
+-- 维度体系一期（2026-09-27）：快照开始留维度值，为维度级重现性铺路。
+-- append-only 红线：只加列不回填，历史行保持 NULL。
+ALTER TABLE score_snapshots ADD COLUMN IF NOT EXISTS dimensions_snapshot jsonb;
+
 CREATE TABLE IF NOT EXISTS simulation_runs (
   id text PRIMARY KEY,
   seed integer NOT NULL,
