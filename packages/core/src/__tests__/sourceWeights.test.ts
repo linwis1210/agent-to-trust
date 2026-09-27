@@ -12,4 +12,8 @@ describe('SOURCE_WEIGHTS', () => {
     expect(SOURCE_WEIGHTS['real-confidential']).toBe(0.5);
     expect(SOURCE_WEIGHTS['real']).toBe(1.0);
   });
+
+  it('arena（v0.3：服务端权威结算证据）按 1.0 计权（补键修复静默兜底 0.3）', () => {
+    expect(SOURCE_WEIGHTS['arena']).toBe(1.0);
+  });
 });

@@ -1,10 +1,10 @@
 /**
- * @a2t/scoring — Baseline Credit Engine v0.2。
+ * @a2t/scoring — Baseline Credit Engine v0.3。
  *
  * 可解释、确定性的评分引擎（纯函数，无副作用，可被 API 与 Dashboard 共用）。
  * 核心原则：每个分数必须能追溯到 evidence；同样输入重复计算一致；score 带 version。
  *
- * 注意：这是实验基线（baseline-v0.2），不是行业标准。
+ * 注意：这是实验基线（baseline-v0.3），不是行业标准。
  */
 
 import {
@@ -16,7 +16,15 @@ import {
 } from '@a2t/core';
 import { snapshotConsistency, type SnapshotPoint } from './consistency.js';
 
-export const SCORE_MODEL_VERSION = 'baseline-v0.2';
+export const SCORE_MODEL_VERSION = 'baseline-v0.3'; // v0.3：重现性 blend + 公开题面封顶 + 覆盖置信系数
+
+/** v0.3 重标定：公开考场题面人人可背题，单题计分封顶 0.85。
+ *  酒馆保密单（real-confidential）与 arena 结算不受此限——不公开、刷不动。 */
+export const PUBLIC_EXAM_VALUE_CAP = 0.85;
+
+/** v0.3 重标定：覆盖置信系数底座。score ×(0.5 + 0.5×coverage)——
+ *  档案不全=后验收缩（贝叶斯语义），8 维全测系数=1，满分语义不变。 */
+export const COVERAGE_CONFIDENCE_BASE = 0.5;
 
 const RESULT_VALUE: Record<EvidenceResult, number> = {
   success: 1.0,
@@ -71,10 +79,11 @@ export interface ScoreResult {
 }
 
 function outcome(point: EvidencePoint): number {
-  if (point.value !== undefined && point.value !== null) {
-    return Math.max(0, Math.min(1, point.value));
-  }
-  return RESULT_VALUE[point.result];
+  const raw =
+    point.value !== undefined && point.value !== null
+      ? Math.max(0, Math.min(1, point.value))
+      : RESULT_VALUE[point.result];
+  return point.source === 'real-benchmark' ? Math.min(raw, PUBLIC_EXAM_VALUE_CAP) : raw;
 }
 
 function sourceWeight(source: Source): number {
@@ -143,10 +152,11 @@ export function computeScore(
   let score: number | null = null;
   let adjustedScore: number | null = null;
   if (available.length > 0) {
-    // v0.2 绝对分：分母恒 = 全 8 维权重和（= 1.0），未测维度记 0。
-    // 「测得越少越占便宜」的旧口径作废：要冲高必须多维度覆盖 + 真实证据。
+    // v0.3 绝对分：分母恒 = 全 8 维权重和（= 1.0，未测维度记 0），
+    // 再乘覆盖置信系数 (0.5 + 0.5×coverage)：半覆盖档案的分数天花板被压向低端，
+    // 洗掉「少量公开题满分 → 高分」的 v1 虚高（老大要求：别让分数太高）。
     const weightedSum = dimensions.reduce((sum, d) => sum + d.weight * (d.score ?? 0), 0);
-    score = Math.round(weightedSum * 10);
+    score = Math.round(weightedSum * 10 * (COVERAGE_CONFIDENCE_BASE + (1 - COVERAGE_CONFIDENCE_BASE) * coverage));
     // v0.2：adjustedScore 只保留时效衰减（coverage 已进 score，不再二次打折）。
     adjustedScore = Math.round(score * freshness(evidence, now).factor);
   }
