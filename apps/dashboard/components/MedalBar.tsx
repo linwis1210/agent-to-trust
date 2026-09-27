@@ -55,10 +55,12 @@ const HEX = '7,3 17,3 22,12 17,21 7,21 2,12';
 export function Medal({
   dimension,
   badge,
+  dimScore,
   size = 19,
 }: {
   dimension: Dimension;
   badge?: DimensionBadge;
+  dimScore?: number | null;
   size?: number;
 }) {
   const t = useT();
@@ -66,14 +68,14 @@ export function Medal({
   const Icon = ICONS[dimension];
   const meta = badge ? TIER_META[badge.tier] : null;
   const dimName = t.dimensions[dimension] ?? dimension;
-  // 未解锁灰章的悬停提示（2026-09-13 老大拍板 C）：
-  // · 该维度**有考题**但未达标 → 提示「证据不足（需 ≥3 条）」；
-  // · 该维度**暂无考题**（economic / collaboration）→ 提示「暂无考题支持 · 欢迎贡献」。
+  // 灰章三态（一期老大拍板）：未开考 / 没考过 / 未达标。
   const title = badge
     ? `${dimName} · ${t.medal.tiers[badge.tier]} · ${badge.score}`
-    : hasExamCoverage(dimension)
-      ? `${dimName} · ${t.medal.notYet}`
-      : `${dimName} · ${t.medal.noExam}`;
+    : !hasExamCoverage(dimension)
+      ? `${dimName} · ${t.medal.noExam}`
+      : dimScore == null
+        ? `${dimName} · ${t.medal.notTaken}`
+        : `${dimName} · ${t.medal.notYet}`;
 
   // 字形反白只发生在实心（专家）档；未解锁降透明度（但提到可辨的对比，非幽灵）。
   const iconTone = meta?.fill === 'full' ? 'text-paper' : badge ? 'text-ink' : 'text-dim/45';
@@ -132,22 +134,25 @@ export function Medal({
  */
 export function MedalBar({
   badges,
+  dimensions, // 新增：可选；灰章三态判定用
   size = 19,
   showLocked = true,
   className = '',
 }: {
   badges: DimensionBadge[];
+  dimensions?: ReadonlyArray<{ dimension: string; score: number | null }>;
   size?: number;
   showLocked?: boolean;
   className?: string;
 }) {
   const map = new Map((badges ?? []).map((b) => [b.dimension, b]));
+  const dimScore = new Map((dimensions ?? []).map((d) => [d.dimension, d.score]));
   const dims = showLocked ? DIMENSIONS : DIMENSIONS.filter((d) => map.has(d));
   if (dims.length === 0) return null;
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
       {dims.map((d) => (
-        <Medal key={d} dimension={d} badge={map.get(d)} size={size} />
+        <Medal key={d} dimension={d} badge={map.get(d)} dimScore={dimScore.get(d) ?? null} size={size} />
       ))}
     </span>
   );

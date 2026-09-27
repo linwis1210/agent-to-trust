@@ -69,6 +69,8 @@ export interface DimensionResult {
   score: number | null;
   weight: number;
   evidenceCount: number;
+  /** 任务 2 新字段（读侧容忍缺省）。 */
+  consistency?: number;
 }
 
 export interface ScoreResponse {

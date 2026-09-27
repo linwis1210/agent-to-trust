@@ -172,6 +172,7 @@ function Row({
             {/* 勋章条（服务端权威派生；每维最多一枚，未解锁显示灰档） */}
             <MedalBar
               badges={e.badges ?? []}
+              dimensions={e.dimensions}
               size={18}
               className="mt-0.5 w-full"
             />

@@ -263,7 +263,7 @@ export function AgentDetail({ agentId, onBack }: { agentId: string; onBack: () =
                 {/* 维度勋章（2026-09-13）：与榜单行同口径，服务端权威派生 */}
                 <div className="mt-5 border-t border-hairline pt-4">
                   <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">{t.medal.title}</div>
-                  <MedalBar badges={score?.badges ?? []} size={26} className="mt-2.5 gap-1.5" />
+                  <MedalBar badges={score?.badges ?? []} dimensions={score?.dimensions} size={26} className="mt-2.5 gap-1.5" />
                   <p className="mt-2.5 font-mono text-[11px] leading-relaxed text-dim">{t.medal.legend}</p>
                 </div>
               </Panel>
