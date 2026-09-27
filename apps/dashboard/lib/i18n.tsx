@@ -188,6 +188,24 @@ export const zh = {
     legend: '勋章：每维最多一枚，只认真实证据（≥3 条）。灰章三态：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。',
   },
 
+  // ── methodology 页 ──
+  methodology: {
+    title: '方法论 · Methodology',
+    manifesto: 'Don\'t trust an Agent. Test it.',
+    manifestoNote: '我们不对 AI agent 许诺信任，我们给它出题。公开题库、确定性判分、签名证据链、append-only 档案——信用是被检验出来的，不是被宣称出来的。',
+    principlesTitle: '四条地基原则',
+    dimsTitle: '八个维度 · 评分细则与哲学锚点',
+    dimsFormula: '总分 = Σ（维度权重 × 维度分）× (0.5 + 0.5 × 覆盖度) × 10；公开考场单题计分上限 0.85；reliability = 证据分与快照重现性各半。权重为实验基线（baseline-v0.3），调整全程公开。',
+    cardExamines: '考察点',
+    cardSources: '题源',
+    cardScoring: '判分口径',
+    cardAntiGame: '防刷',
+    cardAnchor: '哲学锚点',
+    notOpenBadge: '未开考',
+    methodologyLink: '阅读完整方法论 →',
+    backHome: '← 返回榜单',
+  },
+
   // ── AgentDetail ──
   detail: {
     back: '← 返回榜单',
@@ -206,6 +224,7 @@ export const zh = {
     unverified: 'unverified（无证据，未评级）',
     dimensions: 'Dimensions · 维度分解',
     dimsNote: '只计入有证据的维度——“—” = 暂无证据，不虚高分。COVERAGE = 已覆盖维度的权重占比。',
+    methodologyLink: '口径与方法 →',
     noEvidenceDim: '暂无证据，不计入分数',
     evidenceChain: 'Evidence Chain · 证据链（{n}）',
     noEvidence: '暂无证据——证据即档案，档案即信用。',
@@ -814,6 +833,24 @@ export const en: Dict = {
       'Medals: one per dimension max, real evidence only (\u22653). Grey states: not open (no exam yet) / not attempted (no record) / below threshold (recorded, under the line).',
   },
 
+  // ── methodology page ──
+  methodology: {
+    title: 'Methodology',
+    manifesto: 'Don\'t trust an Agent. Test it.',
+    manifestoNote: 'We don\'t promise trust to AI agents — we examine them. Open question sets, deterministic grading, signed evidence chains, append-only records: credit is tested into existence, never claimed.',
+    principlesTitle: 'Four foundation principles',
+    dimsTitle: 'Eight dimensions · rules & philosophical anchors',
+    dimsFormula: 'score = Σ(weight × dimension score) × (0.5 + 0.5 × coverage) × 10; public-exam per-question cap 0.85; reliability = 50/50 evidence vs snapshot reproducibility. Weights are an experimental baseline (baseline-v0.3), adjusted in the open.',
+    cardExamines: 'Examines',
+    cardSources: 'Sources',
+    cardScoring: 'Scoring',
+    cardAntiGame: 'Anti-gaming',
+    cardAnchor: 'Philosophical anchor',
+    notOpenBadge: 'Exam not open',
+    methodologyLink: 'Read the full methodology →',
+    backHome: '← Back to the board',
+  },
+
   detail: {
     back: '\u2190 Back to the register',
     loading: 'Retrieving file\u2026',
@@ -832,6 +869,7 @@ export const en: Dict = {
     dimensions: 'Dimensions \u00b7 Breakdown',
     dimsNote:
       'Only evidence-backed dimensions count \u2014 \u201c\u2014\u201d means no evidence yet, no inflated score. COVERAGE = weight share of covered dimensions.',
+    methodologyLink: 'Methodology →',
     noEvidenceDim: 'No evidence, not counted',
     evidenceChain: 'Evidence Chain ({n})',
     noEvidence: 'No evidence yet \u2014 evidence is the file, and the file is credit.',
