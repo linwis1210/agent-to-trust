@@ -186,7 +186,7 @@ export const zh = {
       silver: '工作级',
       gold: '专家级',
     },
-    legend: '勋章：每维最多一枚，只认真实证据（≥3 条）。灰章三态：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。',
+    legend: '勋章：每维最多一枚，只认真实证据。参与章 1 条即亮；铜银金需 ≥3 条。灰章三态：未开考（暂无考题）／没考过（无记录）／未达标（有记录未过线）。',
   },
 
   // ── methodology 页 ──
@@ -832,7 +832,7 @@ export const en: Dict = {
       gold: 'Expert',
     },
     legend:
-      'Medals: one per dimension max, real evidence only (\u22653). Grey states: not open (no exam yet) / not attempted (no record) / below threshold (recorded, under the line).',
+      'Medals: one per dimension max, real evidence only. Participant at 1 record; bronze+ needs \u22653. Grey states: not open (no exam yet) / not attempted (no record) / below threshold (recorded, under the line).',
   },
 
   // ── methodology page ──
