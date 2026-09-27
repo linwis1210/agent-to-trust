@@ -1,5 +1,5 @@
 /**
- * 勋章派生（Badge）—— 维度 × 三档成就系统。
+ * 勋章派生（Badge）—— 维度 × 四档成就系统（参与 + 铜银金）。
  *
  * 设计稿：docs/specs/2026-09-12-badge-system-design.md §3。
  *
@@ -14,7 +14,7 @@
 
 import { DIMENSIONS, type Dimension } from '@a2t/core';
 
-export type BadgeTier = 'bronze' | 'silver' | 'gold';
+export type BadgeTier = 'participant' | 'bronze' | 'silver' | 'gold';
 
 export interface Badge {
   dimension: Dimension;
@@ -29,6 +29,8 @@ export interface BadgeInput {
   score: number | null;
   /** 该维度**真实**证据条数（real-benchmark / real / verified）。 */
   realEvidenceCount: number;
+  /** 一致性达标（reliability：服务端快照重现性非空）→ 条数视为满足下限。 */
+  consistent?: boolean;
   /** 时效因子 0..1（引擎 freshnessFactor）；未提供则不因时效拦截（向后兼容）。 */
   freshnessFactor?: number;
 }
@@ -37,7 +39,7 @@ export interface BadgeInput {
  * 各维度三档阈值（0–100）。**校准状态：provisional**（按 2026-09-12 真实分分布 P50/P75/P90 锚定）。
  * 正式启用前须跑基线校准，见设计稿 §3.2 / §8。
  */
-export const BADGE_THRESHOLDS: Record<Dimension, Record<BadgeTier, number>> = {
+export const BADGE_THRESHOLDS: Record<Dimension, Record<Exclude<BadgeTier, 'participant'>, number>> = {
   capability: { bronze: 60, silver: 75, gold: 88 },
   reliability: { bronze: 50, silver: 65, gold: 80 },
   delivery: { bronze: 60, silver: 75, gold: 88 },
@@ -48,7 +50,7 @@ export const BADGE_THRESHOLDS: Record<Dimension, Record<BadgeTier, number>> = {
   integrity: { bronze: 65, silver: 80, gold: 90 },
 };
 
-/** 发勋章的真实证据量下限（防单条满分骗专家）。 */
+/** 发铜银金章的真实证据量下限（防单条满分骗专家）；参与章不受此限（≥1 条真实证据即亮）。 */
 export const MIN_BADGE_EVIDENCE = 3;
 
 /** 时效下限：freshnessFactor 低于此值不发（约等于 30 天半衰期下 >30 天的旧证据）。 */
@@ -83,10 +85,18 @@ export function badgesFor(inputs: readonly BadgeInput[]): Badge[] {
     let best: Badge | null = null;
     for (const c of cands) {
       if (c.score === null) continue;
-      // 红线：证据量下限 + 时效（未提供 freshnessFactor 则不拦）
-      if (c.realEvidenceCount < MIN_BADGE_EVIDENCE) continue;
+      // 方案 1：一致性达标（服务端快照重现性非空）→ 视为满足证据量下限
+      const effective = c.consistent
+        ? Math.max(c.realEvidenceCount, MIN_BADGE_EVIDENCE)
+        : c.realEvidenceCount;
+      // 红线：时效（未提供 freshnessFactor 则不拦）
       if (c.freshnessFactor !== undefined && c.freshnessFactor < BADGE_FRESHNESS_MIN) continue;
-      const tier = tierFor(dim, c.score);
+      const tier3 = tierFor(dim, c.score);
+      // 方案 2：参与章——分数达线但条数不足，或有 ≥1 条真实证据且分数>0（全失败不发）
+      const tier: BadgeTier | null =
+        tier3 && effective >= MIN_BADGE_EVIDENCE ? tier3
+        : effective >= 1 && c.score > 0 ? 'participant'
+        : null;
       if (!tier) continue;
       const cur = { dimension: dim, tier, score: c.score };
       if (!best || rank(tier) > rank(best.tier) || (tier === best.tier && c.score > best.score)) best = cur;
@@ -97,7 +107,7 @@ export function badgesFor(inputs: readonly BadgeInput[]): Badge[] {
 }
 
 function rank(t: BadgeTier): number {
-  return t === 'gold' ? 3 : t === 'silver' ? 2 : 1;
+  return t === 'gold' ? 3 : t === 'silver' ? 2 : t === 'bronze' ? 1 : 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,17 +162,19 @@ export function realEvidenceCounts(
  * 榜单行与详情页共用同一口径，避免前端各自实现导致漂移。
  */
 export function badgesFromDimensions(
-  dimensions: readonly { dimension: string; score: number | null }[],
+  dimensions: readonly { dimension: string; score: number | null; consistency?: number | null }[],
   realCounts: ReadonlyMap<string, number>,
   freshnessDays: number | null | undefined,
 ): Badge[] {
   const f = freshnessFactorFromDays(freshnessDays);
   const byDim = new Map(dimensions.map((d) => [d.dimension, d.score]));
+  const consDim = new Map(dimensions.map((d) => [d.dimension, d.consistency]));
   return badgesFor(
     DIMENSIONS.map((dim) => ({
       dimension: dim,
       score: byDim.get(dim) ?? null,
       realEvidenceCount: realCounts.get(dim) ?? 0,
+      consistent: consDim.get(dim) != null,
       ...(f !== undefined ? { freshnessFactor: f } : {}),
     })),
   );

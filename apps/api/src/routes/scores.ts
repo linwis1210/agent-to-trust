@@ -28,7 +28,8 @@ async function badgesForAgent(
       inArray(evidence.source, [...REAL_EVIDENCE_SOURCES]),
     ),
   });
-  const dims = (s.dimensions ?? []) as Array<{ dimension: string; score: number | null }>;
+  const dims = (s.dimensions ?? []) as Array<{ dimension: string; score: number | null; consistency?: number | null }>;
+  // consistency（reliability 重现性）由 badgesFromDimensions 识别为「一致性达标证据」。
   return badgesFromDimensions(dims, realEvidenceCounts(rows), s.freshnessDays);
 }
 
